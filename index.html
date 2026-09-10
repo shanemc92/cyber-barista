@@ -1,0 +1,2342 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+<title>cyber-barista</title>
+
+<!-- Webfonts are off by default so the file works offline and from file://.
+     To turn them on, uncomment the two lines below and swap the CSP above for:
+     ... style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; ...
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+-->
+
+<style>
+
+/* ============================================================
+   cyber-barista
+   One structural stylesheet driven by per-theme design tokens.
+   Two themes, same terminal styling, opposite palettes.
+   ============================================================ */
+
+:root {
+    --wrap: 1180px;  /* the card's column width */
+    --font: 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
+}
+
+/* ---------- Tokens: Dark (default) ---------- */
+:root,
+html[data-theme="dark"] {
+    --bg:          #0b0e14;
+    --card:        #161b25;
+    --sunken:      #11161f;
+    --raised:      #1b212d;
+    --line:        #262d3a;
+    --line-soft:   #1e2431;
+    --fg:          #c7ccd6;
+    --fg-dim:      #7b8496;
+    --fg-faint:    #59616f;
+    --accent:      #58a6ff;
+    --accent-soft: rgba(88, 166, 255, 0.14);
+    --accent-ink:  #06111f;
+    --toggle-on:   #3fb950;
+    --toggle-ink:  #06210c;
+    --radius:      10px;
+    --radius-sm:   6px;
+    --shadow:      0 18px 50px -18px rgba(0, 0, 0, 0.75);
+    --bad:         #f87171;
+    --warn:        #d29922;
+    --ok:          #3fb950;
+}
+
+/* ---------- Tokens: Light ---------- */
+html[data-theme="light"] {
+    --bg:          #e9edf2;
+    --card:        #ffffff;
+    --sunken:      #f3f5f8;
+    --raised:      #fbfcfd;
+    --line:        #d3dae3;
+    --line-soft:   #e5eaf0;
+    --fg:          #0e1620;
+    --fg-dim:      #5f6b7a;
+    --fg-faint:    #8b96a5;
+    --accent:      #0f766e;
+    --accent-soft: rgba(15, 118, 110, 0.10);
+    --accent-ink:  #ffffff;
+    --toggle-on:   #0f766e;
+    --toggle-ink:  #ffffff;
+    --radius:      10px;
+    --radius-sm:   6px;
+    --shadow:      0 1px 2px rgba(16, 24, 40, 0.05), 0 14px 36px -16px rgba(16, 24, 40, 0.28);
+    --bad:         #dc2626;
+    --warn:        #b45309;
+    --ok:          #0f766e;
+}
+
+/* ============================================================
+   Base
+   ============================================================ */
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    padding: 28px 20px 48px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font);
+    font-size: 13.5px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+}
+
+::selection { background: var(--accent); color: var(--accent-ink); }
+::placeholder { color: var(--fg-faint); opacity: 1; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ============================================================
+   Window
+   ============================================================ */
+.container {
+    width: 100%;
+    max-width: var(--wrap);
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+/* ---------- Title bar ---------- */
+.titlebar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 12px 11px 16px;
+    background: var(--sunken);
+    border-bottom: 1px solid var(--line-soft);
+}
+.dot { width: 11px; height: 11px; border-radius: 50%; }
+.dot:nth-child(1) { background: #ff5f56; }
+.dot:nth-child(2) { background: #ffbd2e; }
+.dot:nth-child(3) { background: #27c93f; }
+
+/* Centred on the window rather than after the dots, so it stays centred
+   whatever sits on the right. */
+.titlebar-title {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12.5px;
+    color: var(--fg-dim);
+    pointer-events: none;
+    white-space: nowrap;
+}
+.titlebar .spacer { flex: 1; }
+
+/* ---------- Theme toggle ---------- */
+.icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 27px;
+    height: 27px;
+    padding: 0;
+    color: var(--fg-dim);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+}
+.icon-btn:hover { color: var(--accent); border-color: var(--line); }
+.icon-btn svg {
+    width: 15px; height: 15px;
+    fill: none; stroke: currentColor;
+    stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round;
+}
+/* Show the icon for the theme you would switch to. */
+html[data-theme="dark"]  .ic-moon { display: none; }
+html[data-theme="light"] .ic-sun  { display: none; }
+
+/* ---------- Tab strip ---------- */
+.tabs {
+    display: flex;
+    padding: 0 8px;
+    background: var(--sunken);
+    border-bottom: 1px solid var(--line);
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+    font: inherit;
+    font-size: 12.5px;
+    color: var(--fg-dim);
+    background: transparent;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    padding: 9px 15px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+.tab:hover { color: var(--fg); }
+.tab[aria-selected="true"] {
+    color: var(--accent);
+    background: var(--card);
+    border-bottom-color: var(--accent);
+}
+
+.body { padding: 20px 22px 24px; }
+section[hidden] { display: none; }
+
+/* ---------- Prompt line ---------- */
+.prompt { margin-bottom: 6px; font-size: 13px; }
+.prompt .path { color: var(--accent); }
+.prompt .chev { color: var(--fg-faint); }
+.comment { color: var(--fg-faint); font-size: 12.5px; margin-bottom: 20px; }
+
+/* ============================================================
+   Sections
+   ============================================================ */
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+.section-header span {
+    font-size: 11px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+}
+.section-header span::before { content: '// '; color: var(--fg-faint); }
+
+.panel {
+    background: var(--sunken);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+/* ============================================================
+   Controls
+   ============================================================ */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 13px;
+    font: inherit;
+    font-size: 12.5px;
+    color: var(--fg);
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.btn:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+.btn:active { transform: scale(0.985); }
+.btn:disabled { opacity: 0.55; cursor: default; }
+.btn:disabled:hover { color: var(--fg); border-color: var(--line); background: var(--raised); }
+
+.btn-primary { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
+.btn-primary:hover { color: var(--accent-ink); background: var(--accent); filter: brightness(1.12); }
+.btn-danger:hover { color: var(--bad); border-color: var(--bad); background: transparent; }
+.btn-sm { padding: 5px 9px; font-size: 12px; }
+
+/* ---------- Inputs ---------- */
+.field {
+    width: 100%;
+    font: inherit;
+    font-size: 12.5px;
+    color: var(--fg);
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 7px 10px;
+    outline: none;
+    transition: border-color 0.15s;
+}
+.field:hover { border-color: var(--fg-faint); }
+.field:focus { border-color: var(--accent); }
+textarea.field { line-height: 1.6; resize: vertical; }
+select.field { cursor: pointer; }
+
+label.f {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 11px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+}
+
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.spacer { flex: 1; }
+
+/* ---------- Toggle rows ---------- */
+.toggle-group { display: flex; flex-direction: column; gap: 12px; }
+.toggle-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 30px;
+}
+.toggle-label { font-size: 12.5px; color: var(--fg); }
+
+.toggle-switch {
+    position: relative;
+    flex: 0 0 auto;
+    width: 40px;
+    height: 22px;
+    border-radius: 11px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    cursor: pointer;
+    transition: background 0.18s, border-color 0.18s;
+}
+.toggle-switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--fg-faint);
+    transition: transform 0.18s, background 0.18s;
+}
+.toggle-switch.active { background: var(--toggle-on); border-color: var(--toggle-on); }
+.toggle-switch.active::after { transform: translateX(18px); background: var(--toggle-ink); }
+
+/* ---------- Drop zone ---------- */
+.drop {
+    border: 1px dashed var(--line);
+    border-radius: var(--radius-sm);
+    padding: 22px 14px;
+    text-align: center;
+    color: var(--fg-dim);
+    background: var(--raised);
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.drop:hover, .drop.over { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.drop b { display: block; margin-bottom: 2px; color: var(--fg); font-weight: 500; }
+.drop:hover b { color: var(--accent); }
+
+/* ---------- Text ---------- */
+pre {
+    margin: 0;
+    padding: 12px;
+    max-height: 340px;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 12.5px;
+    line-height: 1.6;
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+}
+code { font-size: 12px; }
+mark { background: var(--accent-soft); color: var(--accent); border-radius: 3px; padding: 1px 3px; }
+.log { font-size: 12px; color: var(--fg-dim); }
+.log .ok { color: var(--ok); } .log .warn { color: var(--warn); }
+.log .bad { color: var(--bad); } .log .a { color: var(--accent); }
+.note { font-size: 11.5px; line-height: 1.65; color: var(--fg-dim); }
+.note code { color: var(--accent); }
+
+/* ---------- Table ---------- */
+table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+th {
+    text-align: left;
+    padding: 8px;
+    font-size: 10px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--fg-dim);
+    border-bottom: 1px solid var(--line);
+}
+td { padding: 6px 8px; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+td .field { padding: 5px 8px; }
+.empty {
+    padding: 26px;
+    text-align: center;
+    color: var(--fg-dim);
+    border: 1px dashed var(--line);
+    border-radius: var(--radius-sm);
+}
+
+/* ============================================================
+   Notification
+   ============================================================ */
+.notification {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translate(-50%, 20px);
+    z-index: 300;
+    padding: 10px 18px;
+    font-size: 12.5px;
+    color: var(--accent-ink);
+    background: var(--accent);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s, transform 0.22s;
+}
+.notification.show { opacity: 1; transform: translate(-50%, 0); }
+.notification.error { color: #fff; background: var(--bad); }
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+@media (max-width: 640px) {
+    body { padding: 14px 10px 32px; }
+    .body { padding: 16px; }
+    .titlebar-title { display: none; }
+    .grid { grid-template-columns: 1fr; }
+    .section-header { flex-direction: column; align-items: flex-start; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+    }
+}
+
+/* ============================================================
+   Print: one light palette for both themes
+   ============================================================ */
+@media print {
+    :root, html[data-theme="dark"], html[data-theme="light"] {
+        color-scheme: light;
+        --bg: #ffffff; --card: #ffffff; --sunken: #fafafa; --raised: #ffffff;
+        --line: #999999; --line-soft: #cccccc;
+        --fg: #111111; --fg-dim: #555555; --fg-faint: #777777;
+        --accent: #0b4f8a; --accent-soft: transparent; --accent-ink: #ffffff;
+        --shadow: none;
+    }
+    body { padding: 0; display: block; }
+    .container { max-width: none; border: none; box-shadow: none; }
+    .titlebar, .tabs, .drop, .notification, .btn, .noprint { display: none !important; }
+    .body { padding: 0; }
+    section[hidden] { display: block !important; }
+    .panel { break-inside: avoid; page-break-inside: avoid; }
+    a[href]::after { content: " (" attr(href) ")"; font-size: 10px; color: #555; }
+}
+
+/* ============================================================
+   cyber-barista layout
+   ============================================================ */
+
+/* Recipe: palette on the left, steps on the right. */
+.chef {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 16px;
+    align-items: start;
+}
+.palette {
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+.palette .search { padding: 8px; border-bottom: 1px solid var(--line-soft); }
+.palette .list { max-height: 430px; overflow: auto; padding: 6px; }
+.palette .grp {
+    padding: 8px 6px 4px;
+    font-size: 10px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--fg-faint);
+}
+.op-btn {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 6px 8px;
+    margin-bottom: 2px;
+    font: inherit;
+    font-size: 12px;
+    color: var(--fg);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.op-btn:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+
+/* Steps */
+.steps { display: flex; flex-direction: column; gap: 10px; }
+.step {
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+}
+.step.off { opacity: 0.5; }
+.step.bad { border-color: var(--bad); }
+.step-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.step-n { font-size: 11px; color: var(--fg-faint); min-width: 16px; }
+.step-name { font-size: 12.5px; flex: 1; min-width: 90px; }
+.step-args { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 10px; }
+.step-err { margin-top: 8px; font-size: 11.5px; color: var(--bad); }
+.arg-label { font-size: 10px; }
+
+/* Encode / decode segment */
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: var(--radius-sm); overflow: hidden; }
+.seg button {
+    font: inherit;
+    font-size: 11px;
+    padding: 3px 9px;
+    color: var(--fg-dim);
+    background: var(--sunken);
+    border: 0;
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+}
+.seg button:hover { color: var(--fg); }
+.seg button[aria-pressed="true"] { color: var(--accent-ink); background: var(--accent); }
+
+/* Per-step tool buttons. Not .icon-btn: that is the title bar theme switch. */
+.step-btn {
+    font: inherit;
+    font-size: 11px;
+    line-height: 1.5;
+    padding: 3px 7px;
+    color: var(--fg-dim);
+    background: var(--sunken);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+}
+.step-btn:hover { color: var(--accent); border-color: var(--accent); }
+.step-btn:disabled { opacity: 0.4; cursor: default; }
+.step-btn:disabled:hover { color: var(--fg-dim); border-color: var(--line); }
+.step-btn.rm:hover { color: var(--bad); border-color: var(--bad); }
+
+/* Input beside output */
+.io { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+.io .panel { margin-bottom: 16px; }
+.io textarea.field { min-height: 260px; }
+.io pre { min-height: 260px; max-height: 430px; }
+
+.small-sel {
+    font: inherit;
+    font-size: 11.5px;
+    color: var(--fg-dim);
+    background: var(--sunken);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 3px 6px;
+    cursor: pointer;
+    outline: none;
+}
+
+@media (max-width: 900px) {
+    .chef { grid-template-columns: 1fr; }
+    .palette .list { max-height: 240px; }
+    .io { grid-template-columns: 1fr; }
+    .io textarea.field, .io pre { min-height: 200px; }
+}
+
+@media print {
+    .chef, .io { grid-template-columns: 1fr; }
+    .io pre, .io textarea.field { min-height: 0; max-height: none; overflow: visible; }
+    .step-btn, .seg, .small-sel { display: none !important; }
+    .step { break-inside: avoid; page-break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="titlebar">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="titlebar-title">cyber-barista</div>
+        <div class="spacer"></div>
+        <button class="icon-btn" id="themeBtn" type="button" aria-pressed="false" title="Switch theme">
+            <svg class="ic-sun" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="4.2"></circle>
+                <path d="M12 2.5v2.2M12 19.3v2.2M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6"></path>
+            </svg>
+            <svg class="ic-moon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M20 14.2A8.2 8.2 0 0 1 9.8 4a8.2 8.2 0 1 0 10.2 10.2z"></path>
+            </svg>
+        </button>
+    </div>
+
+    <div class="tabs" role="tablist">
+        <button class="tab" id="tab-work" role="tab" aria-selected="true" aria-controls="pane-work">work</button>
+        <button class="tab" id="tab-about" role="tab" aria-selected="false" aria-controls="pane-about">about</button>
+    </div>
+
+    <div class="body">
+
+        <div class="prompt"><span class="path">~/cyber-barista</span> <span class="chev">&gt;</span> ready</div>
+        <div class="comment"># order the operations, paste the beans, brew. nothing is uploaded</div>
+
+        <section id="pane-work" role="tabpanel" aria-labelledby="tab-work">
+
+            <div class="panel noprint">
+                <div class="row">
+                    <button class="btn" id="btnLoad">Load recipe</button>
+                    <button class="btn" id="btnSave">Save recipe</button>
+                    <button class="btn btn-primary" id="btnBrew">&#9749; Brew</button>
+                    <button class="btn" id="btnPrint">Print</button>
+                    <div class="spacer"></div>
+                    <div class="toggle-item" style="gap:8px">
+                        <span class="toggle-label">Auto brew</span>
+                        <div class="toggle-switch active" id="tgAuto" role="switch" aria-checked="true" tabindex="0"></div>
+                    </div>
+                    <button class="btn btn-danger" id="btnReset">Reset</button>
+                </div>
+                <input type="file" id="fileIn" accept=".json,application/json" hidden>
+                <div class="note" style="margin-top:10px">Ctrl+S saves the recipe, Ctrl+O loads one, Ctrl+Enter brews. Work is kept in this browser until you reset.</div>
+            </div>
+
+            <div class="panel">
+                <div class="section-header">
+                    <span>Recipe</span>
+                    <div class="row noprint">
+                        <input type="text" class="field" id="mTitle" placeholder="Recipe name" style="width:170px">
+                        <button class="btn btn-sm" id="btnClear">Clear steps</button>
+                    </div>
+                </div>
+                <div class="chef">
+                    <div class="palette noprint">
+                        <div class="search"><input type="text" class="field" id="opSearch" placeholder="Search operations" autocomplete="off"></div>
+                        <div class="list" id="opList"></div>
+                    </div>
+                    <div class="steps" id="steps"></div>
+                </div>
+            </div>
+
+            <div class="io">
+                <div class="panel">
+                    <div class="section-header">
+                        <span>Input</span>
+                        <div class="log" id="inStat"></div>
+                    </div>
+                    <textarea class="field" id="input" spellcheck="false" placeholder="Paste text here"></textarea>
+                </div>
+
+                <div class="panel">
+                    <div class="section-header">
+                        <span>Output</span>
+                        <div class="row noprint">
+                            <select class="small-sel" id="outView" title="Output view">
+                                <option value="text">Text</option>
+                                <option value="hex">Hexdump</option>
+                            </select>
+                            <button class="btn btn-sm" id="btnCopy">Copy</button>
+                            <button class="btn btn-sm" id="btnDl">Download</button>
+                        </div>
+                    </div>
+                    <pre id="output"></pre>
+                    <div class="log" style="margin-top:10px" id="outStat"></div>
+                </div>
+            </div>
+
+        </section>
+
+        <section id="pane-about" role="tabpanel" aria-labelledby="tab-about" hidden>
+            <div class="panel">
+                <div class="section-header"><span>About</span></div>
+                <div class="note">
+                    cyber-barista is a small offline version of the CyberChef idea. Pick operations from the
+                    palette, order them, set each one to encode or decode, and the input is passed through
+                    the chain from top to bottom. Every step takes bytes and returns bytes, so binary output
+                    survives into the next step.
+                    <br><br>
+                    Everything runs client side. There is no network call, no analytics and no dependency:
+                    hashing uses the browser's WebCrypto, compression uses the browser's own gzip and deflate
+                    streams, and MD5 and CRC-32 are implemented in the file because WebCrypto does not offer them.
+                    <br><br>
+                    MD5, CRC-32, ROT and XOR are here for analysis and legacy formats, not for protecting
+                    anything. The recipe and the input are kept in this browser's local storage so the page
+                    survives a reload, and a saved recipe contains any key or secret typed into a step. Use
+                    Reset to clear both.
+                </div>
+            </div>
+            <div class="panel">
+                <div class="section-header"><span>Operations</span></div>
+                <div class="note" id="opDocs"></div>
+            </div>
+        </section>
+
+        <div class="note">cyber-barista v1.0.0 &middot; MIT &middot; <code>github.com/shanemc92</code></div>
+    </div>
+</div>
+
+<div class="notification" id="notification" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+
+
+/* ---------- app identity ---------- */
+const APP = { id: "cyber-barista", version: "1.0.0", schema: 1 };
+
+/* ---------- dom helpers ---------- */
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const el = (tag, cls, txt) => {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (txt != null) n.textContent = txt;
+    return n;
+};
+const today = () => new Date().toISOString().slice(0, 10);
+
+/* ---------- storage (file:// and private mode safe) ---------- */
+const store = {
+    get(k)   { try { return localStorage.getItem(APP.id + ":" + k); } catch (e) { return null; } },
+    set(k,v) { try { localStorage.setItem(APP.id + ":" + k, v); return true; } catch (e) { return false; } },
+    del(k)   { try { localStorage.removeItem(APP.id + ":" + k); } catch (e) {} }
+};
+
+/* ---------- notification ---------- */
+let notifyT;
+function notify(msg, isError) {
+    const n = $("#notification");
+    n.textContent = msg;
+    n.classList.toggle("error", !!isError);
+    n.classList.add("show");
+    clearTimeout(notifyT);
+    notifyT = setTimeout(() => n.classList.remove("show"), 2200);
+}
+
+/* ---------- theme ---------- */
+const themeBtn = $("#themeBtn");
+function applyTheme(theme) {
+    const t = theme === "light" ? "light" : "dark";
+    document.documentElement.dataset.theme = t;
+    themeBtn.setAttribute("aria-pressed", String(t === "light"));
+    themeBtn.title = t === "dark" ? "Switch to light" : "Switch to dark";
+}
+themeBtn.addEventListener("click", () => {
+    const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+    applyTheme(next);
+    if (!store.set("theme", next))
+        notify("Theme changed for this session only, saving it needs the page served over http");
+});
+applyTheme(store.get("theme") || "dark");
+
+/* ---------- tabs ---------- */
+const TABS = [["work", "pane-work"], ["about", "pane-about"]];
+function tab(which) {
+    TABS.forEach(([id, pane]) => {
+        $("#tab-" + id).setAttribute("aria-selected", String(id === which));
+        $("#" + pane).hidden = id !== which;
+    });
+}
+TABS.forEach(([id]) => $("#tab-" + id).addEventListener("click", () => tab(id)));
+
+/* ---------- toggles ---------- */
+function toggle(node, onChange) {
+    const flip = () => {
+        const on = !node.classList.contains("active");
+        node.classList.toggle("active", on);
+        node.setAttribute("aria-checked", String(on));
+        onChange(on);
+    };
+    node.addEventListener("click", flip);
+    node.addEventListener("keydown", e => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); flip(); }
+    });
+}
+
+/* ---------- files ---------- */
+function download(name, data, type) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([data], { type: type || "text/plain;charset=utf-8" }));
+    a.download = name;
+    a.click();
+    setTimeout(() => { try { URL.revokeObjectURL(a.href); } catch (e) {} }, 1000);
+}
+function read(file, cb) {
+    const r = new FileReader();
+    r.onload = () => cb(String(r.result), file);
+    r.onerror = () => notify("Could not read that file", true);
+    r.readAsText(file);
+}
+const slug = s => (s || APP.id).replace(/[^a-z0-9]+/gi, "-").toLowerCase().replace(/^-|-$/g, "");
+const fname = ext => `${slug(state.meta.title)}-${state.meta.date || today()}.${ext}`;
+
+/* ============================================================
+   Bytes
+   ============================================================ */
+const ENC = new TextEncoder();
+const DEC = new TextDecoder();
+const U = s => ENC.encode(s);
+const S = b => DEC.decode(b);
+const HEXC = "0123456789abcdef";
+
+function binStr(b) {
+    let s = "";
+    for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000));
+    return s;
+}
+function toHex(b) {
+    let s = "";
+    for (let i = 0; i < b.length; i++) s += HEXC[b[i] >> 4] + HEXC[b[i] & 15];
+    return s;
+}
+function fromHex(s) {
+    const c = s.replace(/0x/gi, "").replace(/\\x/gi, "").replace(/[^0-9a-f]/gi, "");
+    if (c.length % 2) throw new Error("Hex input has an odd number of digits");
+    const o = new Uint8Array(c.length / 2);
+    for (let i = 0; i < o.length; i++) o[i] = parseInt(c.substr(i * 2, 2), 16);
+    return o;
+}
+
+/* ---------- base64 ---------- */
+function b64enc(b, alpha, pad) {
+    let out = btoa(binStr(b));
+    if (alpha === "url") out = out.replace(/\+/g, "-").replace(/\//g, "_");
+    if (!pad) out = out.replace(/=+$/, "");
+    return out;
+}
+function b64dec(str, alpha) {
+    let s = String(str).replace(/\s+/g, "");
+    if (alpha === "url") s = s.replace(/-/g, "+").replace(/_/g, "/");
+    s = s.replace(/[^A-Za-z0-9+/]/g, "");
+    while (s.length % 4 === 1) s = s.slice(0, -1);
+    if (s.length % 4) s += "=".repeat(4 - (s.length % 4));
+    let bin;
+    try { bin = atob(s); } catch (e) { throw new Error("Input is not valid Base64"); }
+    const o = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) o[i] = bin.charCodeAt(i);
+    return o;
+}
+
+/* ---------- base32 ---------- */
+const B32A = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+const B32H = "0123456789ABCDEFGHIJKLMNOPQRSTUV";
+function b32enc(b, al, pad) {
+    const A = al === "hex" ? B32H : B32A;
+    let bits = 0, val = 0, out = "";
+    for (let i = 0; i < b.length; i++) {
+        val = (val << 8) | b[i]; bits += 8;
+        while (bits >= 5) { out += A[(val >>> (bits - 5)) & 31]; bits -= 5; }
+    }
+    if (bits > 0) out += A[(val << (5 - bits)) & 31];
+    if (pad) while (out.length % 8) out += "=";
+    return out;
+}
+function b32dec(s, al) {
+    const A = al === "hex" ? B32H : B32A;
+    const t = String(s).toUpperCase().replace(/\s+/g, "").replace(/=+$/, "");
+    let bits = 0, val = 0;
+    const out = [];
+    for (const ch of t) {
+        const i = A.indexOf(ch);
+        if (i < 0) throw new Error("Not a Base32 character: " + ch);
+        val = (val << 5) | i; bits += 5;
+        if (bits >= 8) { out.push((val >>> (bits - 8)) & 255); bits -= 8; }
+    }
+    return new Uint8Array(out);
+}
+
+/* ---------- base58 ---------- */
+const B58A = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+function b58enc(b) {
+    if (b.length > 4096) throw new Error("Base58 is limited to 4096 bytes, it gets very slow beyond that");
+    let n = 0n;
+    for (let i = 0; i < b.length; i++) n = n * 256n + BigInt(b[i]);
+    let out = "";
+    while (n > 0n) { out = B58A[Number(n % 58n)] + out; n /= 58n; }
+    let z = 0;
+    while (z < b.length && b[z] === 0) z++;
+    return "1".repeat(z) + out;
+}
+function b58dec(s) {
+    const t = String(s).trim();
+    if (t.length > 6000) throw new Error("Base58 is limited to 6000 characters, it gets very slow beyond that");
+    let n = 0n;
+    for (const ch of t) {
+        const i = B58A.indexOf(ch);
+        if (i < 0) throw new Error("Not a Base58 character: " + ch);
+        n = n * 58n + BigInt(i);
+    }
+    const bytes = [];
+    while (n > 0n) { bytes.unshift(Number(n % 256n)); n /= 256n; }
+    let z = 0;
+    while (z < t.length && t[z] === "1") z++;
+    return new Uint8Array(new Array(z).fill(0).concat(bytes));
+}
+
+/* ---------- md5 (WebCrypto does not do it) ---------- */
+const MD5S = [7,12,17,22,7,12,17,22,7,12,17,22,7,12,17,22,
+              5,9,14,20,5,9,14,20,5,9,14,20,5,9,14,20,
+              4,11,16,23,4,11,16,23,4,11,16,23,4,11,16,23,
+              6,10,15,21,6,10,15,21,6,10,15,21,6,10,15,21];
+const MD5K = (() => {
+    const k = new Uint32Array(64);
+    for (let i = 0; i < 64; i++) k[i] = Math.floor(Math.abs(Math.sin(i + 1)) * 4294967296);
+    return k;
+})();
+function md5(bytes) {
+    const ml = bytes.length;
+    const total = (((ml + 9 + 63) / 64) | 0) * 64;
+    const m = new Uint8Array(total);
+    m.set(bytes);
+    m[ml] = 0x80;
+    const dv = new DataView(m.buffer);
+    const bits = ml * 8;
+    dv.setUint32(total - 8, bits >>> 0, true);
+    dv.setUint32(total - 4, Math.floor(bits / 4294967296), true);
+    let a0 = 0x67452301, b0 = 0xefcdab89, c0 = 0x98badcfe, d0 = 0x10325476;
+    const M = new Uint32Array(16);
+    for (let off = 0; off < total; off += 64) {
+        for (let i = 0; i < 16; i++) M[i] = dv.getUint32(off + i * 4, true);
+        let A = a0, B = b0, C = c0, D = d0;
+        for (let i = 0; i < 64; i++) {
+            let F, g;
+            if (i < 16)      { F = (B & C) | (~B & D);  g = i; }
+            else if (i < 32) { F = (D & B) | (~D & C);  g = (5 * i + 1) & 15; }
+            else if (i < 48) { F = B ^ C ^ D;           g = (3 * i + 5) & 15; }
+            else             { F = C ^ (B | ~D);        g = (7 * i) & 15; }
+            F = (F + A + MD5K[i] + M[g]) >>> 0;
+            A = D; D = C; C = B;
+            B = (B + ((F << MD5S[i]) | (F >>> (32 - MD5S[i])))) >>> 0;
+        }
+        a0 = (a0 + A) >>> 0; b0 = (b0 + B) >>> 0; c0 = (c0 + C) >>> 0; d0 = (d0 + D) >>> 0;
+    }
+    const out = new Uint8Array(16), odv = new DataView(out.buffer);
+    odv.setUint32(0, a0, true); odv.setUint32(4, b0, true);
+    odv.setUint32(8, c0, true); odv.setUint32(12, d0, true);
+    return out;
+}
+
+/* ---------- crc32 ---------- */
+const CRCT = (() => {
+    const t = new Uint32Array(256);
+    for (let i = 0; i < 256; i++) {
+        let c = i;
+        for (let j = 0; j < 8; j++) c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1);
+        t[i] = c >>> 0;
+    }
+    return t;
+})();
+function crc32(b) {
+    let c = 0xffffffff;
+    for (let i = 0; i < b.length; i++) c = CRCT[(c ^ b[i]) & 255] ^ (c >>> 8);
+    return (c ^ 0xffffffff) >>> 0;
+}
+
+/* ---------- keys and digests ---------- */
+function keyBytes(v, fmt) {
+    if (!v) return new Uint8Array(0);
+    if (fmt === "hex") return fromHex(v);
+    if (fmt === "b64") return b64dec(v, "std");
+    return U(v);
+}
+function needSubtle() {
+    if (!(window.crypto && crypto.subtle))
+        throw new Error("WebCrypto is unavailable here. Serve the page over https or localhost, or use MD5 or CRC-32.");
+    return crypto.subtle;
+}
+async function digest(algo, bytes) {
+    if (algo === "MD5") return md5(bytes);
+    if (algo === "CRC-32") {
+        const o = new Uint8Array(4);
+        new DataView(o.buffer).setUint32(0, crc32(bytes), false);
+        return o;
+    }
+    return new Uint8Array(await needSubtle().digest(algo, bytes));
+}
+async function hmac(algo, key, bytes) {
+    const k = await needSubtle().importKey("raw", key, { name: "HMAC", hash: algo }, false, ["sign"]);
+    return new Uint8Array(await needSubtle().sign("HMAC", k, bytes));
+}
+function fmtDigest(b, how) {
+    if (how === "b64") return b64enc(b, "std", true);
+    if (how === "HEX") return toHex(b).toUpperCase();
+    return toHex(b);
+}
+
+/* ---------- ioc regexes ---------- */
+const RX = {
+    url:    /\b[a-z][a-z0-9+.-]{1,20}:\/\/[^\s"'<>)\]}]+/gi,
+    ipv4:   /\b(?:\d{1,3}\.){3}\d{1,3}\b/g,
+    ipv6:   /\b(?:[0-9a-f]{1,4}:){2,7}[0-9a-f]{1,4}\b/gi,
+    domain: /\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,24}\b/gi,
+    email:  /\b[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,24}\b/gi,
+    hash:   /\b(?:[a-f0-9]{32}|[a-f0-9]{40}|[a-f0-9]{64}|[a-f0-9]{128})\b/gi
+};
+const okIp = s => s.split(".").every(o => o.length <= 3 && +o <= 255);
+
+function defangText(s, at) {
+    let o = s.replace(/\b([a-z][a-z0-9+.-]{1,20}):\/\//gi, (m, p) => {
+        const l = p.toLowerCase();
+        let n = p;
+        if (l === "http" || l === "https") n = p.replace(/tt/i, "xx");
+        else if (l === "ftp" || l === "ftps") n = p.replace(/^ft/i, "fx");
+        return n + "[://]";
+    });
+    o = o.replace(RX.email, m => (at ? m.replace("@", "[@]") : m).replace(/\./g, "[.]"));
+    o = o.replace(RX.ipv4, m => okIp(m) ? m.replace(/\./g, "[.]") : m);
+    o = o.replace(RX.domain, m => m.replace(/\./g, "[.]"));
+    return o;
+}
+function fangText(s) {
+    return s
+        .replace(/\[:\/\/\]|\(:\/\/\)/g, "://")
+        .replace(/\[\.\]|\(\.\)|\{\.\}|\[dot\]|\(dot\)/gi, ".")
+        .replace(/\[@\]|\(@\)|\[at\]|\(at\)/gi, "@")
+        .replace(/\bhxxp(s?)\b/gi, (m, s2) => "http" + s2)
+        .replace(/\bfxp(s?)\b/gi, (m, s2) => "ftp" + s2)
+        .replace(/\bmeow\b/gi, "http");
+}
+
+/* ---------- time ---------- */
+const pad2 = n => String(n).padStart(2, "0");
+function utc(d) {
+    return d.getUTCFullYear() + "-" + pad2(d.getUTCMonth() + 1) + "-" + pad2(d.getUTCDate()) + " " +
+           pad2(d.getUTCHours()) + ":" + pad2(d.getUTCMinutes()) + ":" + pad2(d.getUTCSeconds()) + " UTC";
+}
+function localStr(d) {
+    return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()) + " " +
+           pad2(d.getHours()) + ":" + pad2(d.getMinutes()) + ":" + pad2(d.getSeconds()) + " local";
+}
+function rel(ms) {
+    const d = Date.now() - ms;
+    const a = Math.abs(d), u = [[86400000, "d"], [3600000, "h"], [60000, "m"], [1000, "s"]];
+    for (const [n, l] of u) if (a >= n) return (d > 0 ? "" : "in ") + Math.round(a / n) + l + (d > 0 ? " ago" : "");
+    return "just now";
+}
+function epochMs(n, unit) {
+    if (unit === "auto") {
+        const a = Math.abs(n);
+        if (a >= 1e17) unit = "ns"; else if (a >= 1e14) unit = "us";
+        else if (a >= 1e11) unit = "ms"; else unit = "s";
+    }
+    if (unit === "s")  return n * 1000;
+    if (unit === "ms") return n;
+    if (unit === "us") return n / 1000;
+    if (unit === "ns") return n / 1e6;
+    if (unit === "ft") return n / 10000 - 11644473600000;
+    return n;
+}
+
+/* ---------- classical alphabets ---------- */
+const ASCII_PRINT = (() => { let s = ""; for (let i = 32; i < 127; i++) s += String.fromCharCode(i); return s; })();
+const ALPHABETS = {
+    az:    "abcdefghijklmnopqrstuvwxyz",
+    AZaz:  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+    alnum: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
+    ascii: ASCII_PRINT
+};
+const ALPHA_ARG = { k: "alpha", label: "Alphabet", type: "select", def: "az",
+    opts: [["az", "a-z, keeps case"], ["AZaz", "A-Z then a-z"], ["alnum", "A-Z a-z 0-9"], ["ascii", "ASCII printable"], ["custom", "Custom"]] };
+const CUSTOM_ARG = { k: "custom", label: "Custom alphabet", type: "text", def: "", ph: "used when Alphabet is Custom" };
+
+function alphaOf(a) {
+    if (a.alpha !== "custom") return ALPHABETS[a.alpha] || ALPHABETS.az;
+    const c = a.custom || "";
+    if (c.length < 2) throw new Error("Custom alphabet needs at least two characters");
+    if (new Set(c).size !== c.length) throw new Error("Custom alphabet has a repeated character");
+    return c;
+}
+/* With the a-z alphabet, capitals map through their lowercase position and the
+   case is put back afterwards. Every other alphabet is taken literally. */
+function mapChars(s, A, caseless, f) {
+    let out = "";
+    for (const ch of s) {
+        let i = A.indexOf(ch);
+        if (i >= 0) { out += A[f(i)]; continue; }
+        if (caseless) {
+            i = A.indexOf(ch.toLowerCase());
+            if (i >= 0) { out += A[f(i)].toUpperCase(); continue; }
+        }
+        out += ch;
+    }
+    return out;
+}
+const modp = (n, m) => ((n % m) + m) % m;
+function modinv(a, m) {
+    a = modp(a, m);
+    for (let x = 1; x < m; x++) if (modp(a * x, m) === 1) return x;
+    throw new Error("a=" + a + " has no inverse for an alphabet of " + m + " characters, pick one that shares no factor with it");
+}
+
+/* ---------- ascii85 ---------- */
+function a85enc(b, adobe) {
+    let out = "";
+    for (let i = 0; i < b.length; i += 4) {
+        const n = Math.min(4, b.length - i);
+        let v = 0;
+        for (let j = 0; j < 4; j++) v = v * 256 + (j < n ? b[i + j] : 0);
+        if (n === 4 && v === 0) { out += "z"; continue; }
+        let block = "";
+        for (let j = 0; j < 5; j++) { block = String.fromCharCode(33 + (v % 85)) + block; v = Math.floor(v / 85); }
+        out += block.slice(0, n + 1);
+    }
+    return adobe ? "<~" + out + "~>" : out;
+}
+function a85dec(s) {
+    const t = String(s).replace(/\s+/g, "").replace(/^<~/, "").replace(/~>$/, "");
+    const out = [];
+    let grp = [];
+    const flush = full => {
+        const n = grp.length;
+        while (grp.length < 5) grp.push(84);
+        let v = 0;
+        for (const g of grp) v = v * 85 + g;
+        const bytes = [];
+        for (let j = 3; j >= 0; j--) bytes.push(Math.floor(v / Math.pow(256, j)) % 256);
+        out.push.apply(out, full ? bytes : bytes.slice(0, n - 1));
+        grp = [];
+    };
+    for (const ch of t) {
+        if (ch === "z" && !grp.length) { out.push(0, 0, 0, 0); continue; }
+        const c = ch.charCodeAt(0) - 33;
+        if (c < 0 || c > 84) throw new Error("Not an Ascii85 character: " + ch);
+        grp.push(c);
+        if (grp.length === 5) flush(true);
+    }
+    if (grp.length === 1) throw new Error("Ascii85 input ends with a single stray character");
+    if (grp.length) flush(false);
+    return new Uint8Array(out);
+}
+
+/* ---------- rc4 ---------- */
+function rc4(key, data) {
+    if (!key.length) throw new Error("RC4 needs a key");
+    const Sb = new Uint8Array(256);
+    for (let i = 0; i < 256; i++) Sb[i] = i;
+    let j = 0, t;
+    for (let i = 0; i < 256; i++) {
+        j = (j + Sb[i] + key[i % key.length]) & 255;
+        t = Sb[i]; Sb[i] = Sb[j]; Sb[j] = t;
+    }
+    const out = new Uint8Array(data.length);
+    let i2 = 0;
+    j = 0;
+    for (let k = 0; k < data.length; k++) {
+        i2 = (i2 + 1) & 255;
+        j = (j + Sb[i2]) & 255;
+        t = Sb[i2]; Sb[i2] = Sb[j]; Sb[j] = t;
+        out[k] = data[k] ^ Sb[(Sb[i2] + Sb[j]) & 255];
+    }
+    return out;
+}
+
+/* ---------- morse, bacon, polybius, rail fence ---------- */
+const MORSE = {
+    A: ".-", B: "-...", C: "-.-.", D: "-..", E: ".", F: "..-.", G: "--.", H: "....",
+    I: "..", J: ".---", K: "-.-", L: ".-..", M: "--", N: "-.", O: "---", P: ".--.",
+    Q: "--.-", R: ".-.", S: "...", T: "-", U: "..-", V: "...-", W: ".--", X: "-..-",
+    Y: "-.--", Z: "--..", 0: "-----", 1: ".----", 2: "..---", 3: "...--", 4: "....-",
+    5: ".....", 6: "-....", 7: "--...", 8: "---..", 9: "----.",
+    ".": ".-.-.-", ",": "--..--", "?": "..--..", "'": ".----.", "!": "-.-.--",
+    "/": "-..-.", "(": "-.--.", ")": "-.--.-", "&": ".-...", ":": "---...",
+    ";": "-.-.-.", "=": "-...-", "+": ".-.-.", "-": "-....-", "_": "..--.-",
+    '"': ".-..-.", $: "...-..-", "@": ".--.-."
+};
+const MORSE_REV = (() => { const m = {}; for (const k in MORSE) m[MORSE[k]] = k; return m; })();
+const BACON24 = "ABCDEFGHIKLMNOPQRSTUWXYZ";   /* I=J, U=V */
+function baconAlpha(v26) { return v26 ? "ABCDEFGHIJKLMNOPQRSTUVWXYZ" : BACON24; }
+function baconFold(ch, v26) {
+    if (v26) return ch;
+    if (ch === "J") return "I";
+    if (ch === "V") return "U";
+    return ch;
+}
+function polySquare(key) {
+    const base = "ABCDEFGHIKLMNOPQRSTUVWXYZ".replace("J", "");
+    let sq = "";
+    for (const ch of String(key || "").toUpperCase().replace(/J/g, "I")) {
+        if (base.includes(ch) && !sq.includes(ch)) sq += ch;
+    }
+    for (const ch of base) if (!sq.includes(ch)) sq += ch;
+    return sq;
+}
+function railPattern(len, n, off) {
+    const p = [];
+    let r = 0, dir = 1;
+    const step = () => { r += dir; if (r === n - 1 || r === 0) dir = -dir; };
+    for (let i = 0; i < off; i++) step();
+    for (let i = 0; i < len; i++) { p.push(r); step(); }
+    return p;
+}
+const preview = (b, n) => {
+    let s = "";
+    for (let i = 0; i < Math.min(b.length, n); i++) s += (b[i] >= 32 && b[i] < 127) ? String.fromCharCode(b[i]) : ".";
+    return s;
+};
+const printableScore = b => {
+    if (!b.length) return 0;
+    let ok = 0;
+    for (let i = 0; i < b.length; i++) if ((b[i] >= 32 && b[i] < 127) || b[i] === 9 || b[i] === 10 || b[i] === 13) ok++;
+    return ok / b.length;
+};
+
+/* ============================================================
+   Operations
+   ============================================================ */
+const OPS = {
+    base64: {
+        name: "Base64", group: "Encoding", dual: true,
+        args: [
+            { k: "alpha", label: "Alphabet", type: "select", def: "std", opts: [["std", "Standard +/"], ["url", "URL safe -_"]] },
+            { k: "pad", label: "Padding", type: "check", def: true }
+        ],
+        run: (b, a, d) => d === "enc" ? U(b64enc(b, a.alpha, a.pad)) : b64dec(S(b), a.alpha)
+    },
+    base32: {
+        name: "Base32", group: "Encoding", dual: true,
+        args: [
+            { k: "alpha", label: "Alphabet", type: "select", def: "std", opts: [["std", "RFC 4648"], ["hex", "Base32hex"]] },
+            { k: "pad", label: "Padding", type: "check", def: true }
+        ],
+        run: (b, a, d) => d === "enc" ? U(b32enc(b, a.alpha, a.pad)) : b32dec(S(b), a.alpha)
+    },
+    base58: {
+        name: "Base58", group: "Encoding", dual: true, args: [],
+        run: (b, a, d) => d === "enc" ? U(b58enc(b)) : b58dec(S(b))
+    },
+    hex: {
+        name: "Hex", group: "Encoding", dual: true,
+        args: [{ k: "delim", label: "Delimiter", type: "select", def: "space",
+                 opts: [["space", "Space"], ["none", "None"], ["comma", "Comma"], ["colon", "Colon"], ["line", "Line"], ["0x", "0x"], ["bs", "\\x"]] }],
+        run: (b, a, d) => {
+            if (d === "dec") return fromHex(S(b));
+            const p = [];
+            for (let i = 0; i < b.length; i++) p.push(HEXC[b[i] >> 4] + HEXC[b[i] & 15]);
+            if (a.delim === "0x") return U(p.map(x => "0x" + x).join(" "));
+            if (a.delim === "bs") return U(p.map(x => "\\x" + x).join(""));
+            return U(p.join({ none: "", space: " ", comma: ",", colon: ":", line: "\n" }[a.delim]));
+        }
+    },
+    binary: {
+        name: "Binary", group: "Encoding", dual: true,
+        args: [{ k: "delim", label: "Delimiter", type: "select", def: "space", opts: [["space", "Space"], ["none", "None"]] }],
+        run: (b, a, d) => {
+            if (d === "enc") {
+                const p = [];
+                for (let i = 0; i < b.length; i++) p.push(b[i].toString(2).padStart(8, "0"));
+                return U(p.join(a.delim === "none" ? "" : " "));
+            }
+            const t = S(b).replace(/[^01]/g, "");
+            if (t.length % 8) throw new Error("Binary input is not a whole number of bytes");
+            const o = new Uint8Array(t.length / 8);
+            for (let i = 0; i < o.length; i++) o[i] = parseInt(t.substr(i * 8, 8), 2);
+            return o;
+        }
+    },
+    decimal: {
+        name: "Decimal", group: "Encoding", dual: true,
+        args: [{ k: "delim", label: "Delimiter", type: "select", def: "space", opts: [["space", "Space"], ["comma", "Comma"], ["line", "Line"]] }],
+        run: (b, a, d) => {
+            if (d === "enc") return U(Array.from(b).join({ space: " ", comma: ",", line: "\n" }[a.delim]));
+            const n = S(b).split(/[^0-9]+/).filter(x => x !== "").map(Number);
+            if (n.some(x => x > 255)) throw new Error("A value is larger than one byte");
+            return new Uint8Array(n);
+        }
+    },
+    url: {
+        name: "URL", group: "Encoding", dual: true,
+        args: [
+            { k: "mode", label: "Encode", type: "select", def: "std", opts: [["std", "Special chars"], ["all", "Everything"]] },
+            { k: "plus", label: "+ is a space", type: "check", def: false }
+        ],
+        run: (b, a, d) => {
+            if (d === "enc") {
+                if (a.mode === "all") { let o = ""; for (let i = 0; i < b.length; i++) o += "%" + HEXC[b[i] >> 4].toUpperCase() + HEXC[b[i] & 15].toUpperCase(); return U(o); }
+                return U(encodeURIComponent(S(b)));
+            }
+            let s = S(b);
+            if (a.plus) s = s.replace(/\+/g, " ");
+            const out = [];
+            for (let i = 0; i < s.length; i++) {
+                if (s[i] === "%" && /^[0-9a-f]{2}$/i.test(s.substr(i + 1, 2))) { out.push(parseInt(s.substr(i + 1, 2), 16)); i += 2; }
+                else U(s[i]).forEach(x => out.push(x));
+            }
+            return new Uint8Array(out);
+        }
+    },
+    html: {
+        name: "HTML entities", group: "Encoding", dual: true,
+        args: [{ k: "mode", label: "Encode", type: "select", def: "min", opts: [["min", "Special chars"], ["all", "Also non-ASCII"]] }],
+        run: (b, a, d) => {
+            const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+            if (d === "enc") {
+                let s = S(b).replace(/[&<>"']/g, c => map[c]);
+                if (a.mode === "all") s = s.replace(/[^\x00-\x7f]/gu, c => "&#" + c.codePointAt(0) + ";");
+                return U(s);
+            }
+            const named = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: "\u00a0", tab: "\t", newline: "\n" };
+            return U(S(b).replace(/&(#x?[0-9a-f]+|[a-z]+);/gi, (m, e) => {
+                if (e[0] === "#") return String.fromCodePoint(e[1].toLowerCase() === "x" ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10));
+                const k = e.toLowerCase();
+                return k in named ? named[k] : m;
+            }));
+        }
+    },
+    unicode: {
+        name: "Unicode escapes", group: "Encoding", dual: true,
+        args: [
+            { k: "style", label: "Style", type: "select", def: "u", opts: [["u", "\\uXXXX"], ["x", "\\xXX"], ["cp", "\\u{XXXX}"], ["pct", "%uXXXX"]] },
+            { k: "scope", label: "Encode", type: "select", def: "all", opts: [["all", "Everything"], ["hi", "Non-ASCII only"]] }
+        ],
+        run: (b, a, d) => {
+            const s = S(b);
+            if (d === "enc") {
+                let o = "";
+                if (a.style === "cp") {
+                    for (const ch of s) {
+                        const cp = ch.codePointAt(0);
+                        o += (a.scope === "all" || cp > 126) ? "\\u{" + cp.toString(16) + "}" : ch;
+                    }
+                    return U(o);
+                }
+                for (let i = 0; i < s.length; i++) {
+                    const c = s.charCodeAt(i);
+                    if (a.scope === "hi" && c <= 126) { o += s[i]; continue; }
+                    if (a.style === "x" && c < 256) o += "\\x" + c.toString(16).padStart(2, "0");
+                    else o += (a.style === "pct" ? "%u" : "\\u") + c.toString(16).padStart(4, "0");
+                }
+                return U(o);
+            }
+            return U(s.replace(/\\u\{([0-9a-f]{1,6})\}|(?:\\u|%u)([0-9a-f]{4})|\\x([0-9a-f]{2})/gi,
+                (m, a1, b1, c1) => String.fromCodePoint(parseInt(a1 || b1 || c1, 16))));
+        }
+    },
+    compress: {
+        name: "Compression", group: "Encoding", dual: true, dirs: ["Compress", "Decompress"],
+        args: [{ k: "fmt", label: "Format", type: "select", def: "gzip", opts: [["gzip", "gzip"], ["deflate", "zlib deflate"], ["deflate-raw", "raw deflate"]] }],
+        run: async (b, a, d) => {
+            const C = d === "enc" ? window.CompressionStream : window.DecompressionStream;
+            if (!C) throw new Error("This browser has no " + (d === "enc" ? "CompressionStream" : "DecompressionStream"));
+            const st = new Blob([b]).stream().pipeThrough(new C(a.fmt));
+            return new Uint8Array(await new Response(st).arrayBuffer());
+        }
+    },
+
+    hash: {
+        name: "Hash", group: "Hashing",
+        args: [
+            { k: "algo", label: "Algorithm", type: "select", def: "SHA-256",
+              opts: [["MD5", "MD5"], ["SHA-1", "SHA-1"], ["SHA-256", "SHA-256"], ["SHA-384", "SHA-384"], ["SHA-512", "SHA-512"], ["CRC-32", "CRC-32"]] },
+            { k: "out", label: "Output", type: "select", def: "hex", opts: [["hex", "hex"], ["HEX", "HEX"], ["b64", "base64"]] }
+        ],
+        run: async (b, a) => U(fmtDigest(await digest(a.algo, b), a.out))
+    },
+    hmac: {
+        name: "HMAC", group: "Hashing",
+        args: [
+            { k: "algo", label: "Algorithm", type: "select", def: "SHA-256", opts: [["SHA-1", "SHA-1"], ["SHA-256", "SHA-256"], ["SHA-384", "SHA-384"], ["SHA-512", "SHA-512"]] },
+            { k: "key", label: "Key", type: "text", def: "", ph: "secret" },
+            { k: "kf", label: "Key format", type: "select", def: "utf8", opts: [["utf8", "UTF-8"], ["hex", "Hex"], ["b64", "Base64"]] },
+            { k: "out", label: "Output", type: "select", def: "hex", opts: [["hex", "hex"], ["HEX", "HEX"], ["b64", "base64"]] }
+        ],
+        run: async (b, a) => U(fmtDigest(await hmac(a.algo, keyBytes(a.key, a.kf), b), a.out))
+    },
+    xor: {
+        name: "XOR", group: "Crypto",
+        args: [
+            { k: "key", label: "Key", type: "text", def: "", ph: "key or hex" },
+            { k: "kf", label: "Key format", type: "select", def: "utf8", opts: [["utf8", "UTF-8"], ["hex", "Hex"], ["b64", "Base64"]] }
+        ],
+        run: (b, a) => {
+            const k = keyBytes(a.key, a.kf);
+            if (!k.length) throw new Error("XOR needs a key");
+            const o = new Uint8Array(b.length);
+            for (let i = 0; i < b.length; i++) o[i] = b[i] ^ k[i % k.length];
+            return o;
+        }
+    },
+    rot: {
+        name: "ROT", group: "Crypto", dual: true,
+        args: [
+            { k: "mode", label: "Mode", type: "select", def: "13", opts: [["13", "ROT13"], ["n", "ROT-N"], ["47", "ROT47"]] },
+            { k: "n", label: "N", type: "text", def: "13", ph: "13" }
+        ],
+        run: (b, a, d) => {
+            const s = S(b);
+            if (a.mode === "47") return U(s.replace(/[!-~]/g, c => String.fromCharCode(33 + ((c.charCodeAt(0) - 33 + 47) % 94))));
+            let n = a.mode === "13" ? 13 : parseInt(a.n, 10);
+            if (!isFinite(n)) throw new Error("N is not a number");
+            if (d === "dec") n = -n;
+            n = ((n % 26) + 26) % 26;
+            return U(s.replace(/[a-z]/gi, c => {
+                const base = c === c.toUpperCase() ? 65 : 97;
+                return String.fromCharCode(((c.charCodeAt(0) - base + n) % 26) + base);
+            }));
+        }
+    },
+
+    jwt: {
+        name: "JWT decode", group: "Parsing",
+        args: [
+            { k: "key", label: "Secret (optional)", type: "text", def: "", ph: "HS256 verify" },
+            { k: "kf", label: "Secret format", type: "select", def: "utf8", opts: [["utf8", "UTF-8"], ["hex", "Hex"], ["b64", "Base64"]] }
+        ],
+        run: async (b, a) => {
+            const tok = S(b).trim().replace(/^Bearer\s+/i, "").replace(/\s+/g, "");
+            const p = tok.split(".");
+            if (p.length < 2) throw new Error("That does not look like a JWT");
+            const part = i => {
+                const raw = S(b64dec(p[i], "url"));
+                try { return [JSON.parse(raw), null]; } catch (e) { return [null, raw]; }
+            };
+            const [head, headRaw] = part(0);
+            const [body, bodyRaw] = part(1);
+            const L = [];
+            L.push("--- header ---");
+            L.push(head ? JSON.stringify(head, null, 2) : headRaw);
+            L.push("");
+            L.push("--- payload ---");
+            L.push(body ? JSON.stringify(body, null, 2) : bodyRaw);
+            if (body) {
+                const times = ["iat", "nbf", "exp", "auth_time", "updated_at"].filter(k => typeof body[k] === "number");
+                if (times.length) {
+                    L.push("");
+                    L.push("--- times ---");
+                    times.forEach(k => {
+                        const ms = epochMs(body[k], "auto");
+                        L.push(k.padEnd(11) + String(body[k]).padEnd(16) + utc(new Date(ms)) + "  (" + rel(ms) + ")");
+                    });
+                    if (typeof body.exp === "number")
+                        L.push("status".padEnd(11) + (epochMs(body.exp, "auto") < Date.now() ? "EXPIRED" : "not expired"));
+                }
+            }
+            L.push("");
+            L.push("--- signature ---");
+            if (p.length < 3 || !p[2]) L.push("none");
+            else {
+                const sig = b64dec(p[2], "url");
+                L.push("length     " + sig.length + " bytes");
+                L.push("hex        " + toHex(sig));
+                const alg = head && head.alg ? String(head.alg) : "";
+                if (!a.key) L.push("verify     not checked, no secret given");
+                else if (/^HS(256|384|512)$/.test(alg)) {
+                    const mine = await hmac("SHA-" + alg.slice(2), keyBytes(a.key, a.kf), U(p[0] + "." + p[1]));
+                    L.push("verify     " + (toHex(mine) === toHex(sig) ? "OK, signature matches" : "MISMATCH, wrong secret or tampered token"));
+                } else L.push("verify     " + (alg ? alg + " is asymmetric, not checked here" : "unknown alg"));
+            }
+            return U(L.join("\n"));
+        }
+    },
+    json: {
+        name: "JSON", group: "Parsing", dual: true, dirs: ["Beautify", "Minify"],
+        args: [{ k: "indent", label: "Indent", type: "select", def: "2", opts: [["2", "2 spaces"], ["4", "4 spaces"], ["tab", "Tab"]] }],
+        run: (b, a, d) => {
+            let v;
+            try { v = JSON.parse(S(b)); } catch (e) { throw new Error("Input is not valid JSON: " + e.message); }
+            return U(d === "dec" ? JSON.stringify(v) : JSON.stringify(v, null, a.indent === "tab" ? "\t" : +a.indent));
+        }
+    },
+    time: {
+        name: "Timestamp", group: "Parsing", dual: true, dirs: ["To date", "To epoch"],
+        args: [{ k: "unit", label: "Unit", type: "select", def: "auto",
+                 opts: [["auto", "Auto"], ["s", "Seconds"], ["ms", "Milliseconds"], ["us", "Microseconds"], ["ns", "Nanoseconds"], ["ft", "Windows FILETIME"]] }],
+        run: (b, a, d) => {
+            const lines = S(b).split(/\r?\n/).map(x => x.trim()).filter(x => x !== "");
+            if (!lines.length) throw new Error("Nothing to convert");
+            return U(lines.map(line => {
+                if (d === "enc") {
+                    const n = Number(line.replace(/[_,]/g, ""));
+                    if (!isFinite(n)) return line + "  ->  not a number";
+                    const dt = new Date(epochMs(n, a.unit));
+                    if (isNaN(dt.getTime())) return line + "  ->  out of range";
+                    return line + "  ->  " + utc(dt) + "  |  " + localStr(dt) + "  |  " + rel(dt.getTime());
+                }
+                const dt = new Date(line);
+                if (isNaN(dt.getTime())) return line + "  ->  could not parse that date";
+                return line + "  ->  " + Math.floor(dt.getTime() / 1000) + " s  |  " + dt.getTime() + " ms  |  " + dt.toISOString();
+            }).join("\n"));
+        }
+    },
+    defang: {
+        name: "Defang", group: "Parsing", dual: true, dirs: ["Defang", "Fang"],
+        args: [{ k: "at", label: "Also defang @", type: "check", def: true }],
+        run: (b, a, d) => U(d === "enc" ? defangText(S(b), a.at) : fangText(S(b)))
+    },
+
+    entropy: {
+        name: "Entropy", group: "Analysis", args: [],
+        run: b => {
+            if (!b.length) throw new Error("Nothing to measure");
+            const f = new Array(256).fill(0);
+            for (let i = 0; i < b.length; i++) f[b[i]]++;
+            let h = 0, uniq = 0, print = 0;
+            for (let i = 0; i < 256; i++) {
+                if (!f[i]) continue;
+                uniq++;
+                const p = f[i] / b.length;
+                h -= p * Math.log2(p);
+                if ((i >= 32 && i < 127) || i === 9 || i === 10 || i === 13) print += f[i];
+            }
+            const verdict = h < 1 ? "very repetitive, padding or a single value"
+                : h < 3.5 ? "low, looks like plain text or code"
+                : h < 5 ? "moderate, text with mixed content"
+                : h < 6.5 ? "raised, could be encoded or compressed text"
+                : h < 7.5 ? "high, likely encoded, compressed or packed"
+                : "very high, consistent with compressed or encrypted data";
+            const L = [];
+            L.push("bytes        " + b.length);
+            L.push("unique       " + uniq + " of 256");
+            L.push("shannon      " + h.toFixed(4) + " bits per byte, max 8.0000");
+            L.push("printable    " + (print * 100 / b.length).toFixed(1) + "%");
+            L.push("verdict      " + verdict);
+            L.push("");
+            L.push("distribution, 16 buckets of 16 byte values");
+            let max = 0;
+            const buck = [];
+            for (let i = 0; i < 16; i++) {
+                let s = 0;
+                for (let j = 0; j < 16; j++) s += f[i * 16 + j];
+                buck.push(s);
+                if (s > max) max = s;
+            }
+            buck.forEach((s, i) => {
+                const w = max ? Math.round(s * 40 / max) : 0;
+                L.push(toHex(new Uint8Array([i * 16])) + "-" + toHex(new Uint8Array([i * 16 + 15])) + "  " +
+                       "#".repeat(w).padEnd(40) + " " + s);
+            });
+            return U(L.join("\n"));
+        }
+    },
+    extract: {
+        name: "Extract", group: "Analysis",
+        args: [
+            { k: "what", label: "Type", type: "select", def: "ipv4",
+              opts: [["ipv4", "IPv4"], ["ipv6", "IPv6"], ["domain", "Domains"], ["url", "URLs"], ["email", "Emails"], ["hash", "Hashes"]] },
+            { k: "fang", label: "Refang first", type: "check", def: true },
+            { k: "uniq", label: "Unique", type: "check", def: true },
+            { k: "sort", label: "Sort", type: "check", def: false }
+        ],
+        run: (b, a) => {
+            let s = S(b);
+            if (a.fang) s = fangText(s);
+            let m = s.match(RX[a.what]) || [];
+            if (a.what === "ipv4") m = m.filter(okIp);
+            if (a.uniq) m = Array.from(new Set(m));
+            if (a.sort) m.sort();
+            return U(m.join("\n"));
+        }
+    },
+    strings: {
+        name: "Strings", group: "Analysis",
+        args: [{ k: "min", label: "Minimum length", type: "text", def: "4", ph: "4" }],
+        run: (b, a) => {
+            const min = Math.max(1, parseInt(a.min, 10) || 4);
+            const out = [];
+            let cur = "";
+            for (let i = 0; i < b.length; i++) {
+                const c = b[i];
+                if (c >= 32 && c < 127) cur += String.fromCharCode(c);
+                else { if (cur.length >= min) out.push(cur); cur = ""; }
+            }
+            if (cur.length >= min) out.push(cur);
+            return U(out.join("\n"));
+        }
+    },
+
+    find: {
+        name: "Find / replace", group: "Text",
+        args: [
+            { k: "find", label: "Find", type: "text", def: "", ph: "text or pattern" },
+            { k: "rep", label: "Replace", type: "text", def: "", ph: "" },
+            { k: "mode", label: "Mode", type: "select", def: "str", opts: [["str", "Plain text"], ["re", "Regex"]] },
+            { k: "ci", label: "Ignore case", type: "check", def: false },
+            { k: "all", label: "Replace all", type: "check", def: true }
+        ],
+        run: (b, a) => {
+            if (!a.find) return b;
+            const flags = (a.all ? "g" : "") + (a.ci ? "i" : "") + "m";
+            const pat = a.mode === "re" ? a.find : a.find.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            let re;
+            try { re = new RegExp(pat, flags); } catch (e) { throw new Error("Bad regex: " + e.message); }
+            return U(S(b).replace(re, a.rep));
+        }
+    },
+    lines: {
+        name: "Line tools", group: "Text",
+        args: [{ k: "mode", label: "Mode", type: "select", def: "sort",
+                 opts: [["sort", "Sort A-Z"], ["rsort", "Sort Z-A"], ["nsort", "Sort numeric"], ["uniq", "Unique"],
+                        ["rev", "Reverse order"], ["blank", "Drop blank lines"], ["trim", "Trim"], ["num", "Number lines"], ["count", "Count duplicates"]] }],
+        run: (b, a) => {
+            let L = S(b).split(/\r?\n/);
+            switch (a.mode) {
+                case "sort":  L.sort(); break;
+                case "rsort": L.sort().reverse(); break;
+                case "nsort": L.sort((x, y) => (parseFloat(x) || 0) - (parseFloat(y) || 0)); break;
+                case "uniq":  L = Array.from(new Set(L)); break;
+                case "rev":   L.reverse(); break;
+                case "blank": L = L.filter(x => x.trim() !== ""); break;
+                case "trim":  L = L.map(x => x.trim()); break;
+                case "num":   L = L.map((x, i) => String(i + 1).padStart(5) + "  " + x); break;
+                case "count": {
+                    const m = new Map();
+                    L.forEach(x => m.set(x, (m.get(x) || 0) + 1));
+                    L = Array.from(m.entries()).sort((p, q) => q[1] - p[1]).map(([k, v]) => String(v).padStart(6) + "  " + k);
+                    break;
+                }
+            }
+            return U(L.join("\n"));
+        }
+    },
+    caseop: {
+        name: "Change case", group: "Text",
+        args: [{ k: "mode", label: "Mode", type: "select", def: "upper",
+                 opts: [["upper", "UPPER"], ["lower", "lower"], ["swap", "Swap"], ["title", "Title"]] }],
+        run: (b, a) => {
+            const s = S(b);
+            if (a.mode === "upper") return U(s.toUpperCase());
+            if (a.mode === "lower") return U(s.toLowerCase());
+            if (a.mode === "swap") return U(s.replace(/[a-z]/gi, c => c === c.toLowerCase() ? c.toUpperCase() : c.toLowerCase()));
+            return U(s.replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase()));
+        }
+    },
+    reverse: {
+        name: "Reverse", group: "Text",
+        args: [{ k: "mode", label: "Mode", type: "select", def: "bytes", opts: [["bytes", "Bytes"], ["lines", "Lines"], ["words", "Words"]] }],
+        run: (b, a) => {
+            if (a.mode === "bytes") return b.slice().reverse();
+            const s = S(b);
+            if (a.mode === "lines") return U(s.split(/\r?\n/).reverse().join("\n"));
+            return U(s.split(/(\s+)/).reverse().join(""));
+        }
+    },
+    strip: {
+        name: "Strip", group: "Text",
+        args: [{ k: "mode", label: "Remove", type: "select", def: "ws",
+                 opts: [["ws", "All whitespace"], ["nl", "Line breaks"], ["nul", "Null bytes"], ["np", "Non-printable"], ["nonascii", "Non-ASCII"]] }],
+        run: (b, a) => {
+            if (a.mode === "nul") return b.filter(x => x !== 0);
+            if (a.mode === "np") return b.filter(x => x === 9 || x === 10 || x === 13 || (x >= 32 && x < 127));
+            if (a.mode === "nonascii") return b.filter(x => x < 128);
+            const s = S(b);
+            return U(a.mode === "ws" ? s.replace(/\s+/g, "") : s.replace(/\r?\n/g, ""));
+        }
+    },
+
+    ascii85: {
+        name: "Ascii85", group: "Encoding", dual: true,
+        args: [{ k: "adobe", label: "Adobe <~ ~> wrapper", type: "check", def: false }],
+        run: (b, a, d) => d === "enc" ? U(a85enc(b, a.adobe)) : a85dec(S(b))
+    },
+
+    caesar: {
+        name: "Caesar", group: "Classical", dual: true,
+        args: [
+            { k: "shift", label: "Shift", type: "text", def: "3", ph: "3" },
+            ALPHA_ARG, CUSTOM_ARG
+        ],
+        run: (b, a, d) => {
+            const A = alphaOf(a);
+            let n = parseInt(a.shift, 10);
+            if (!isFinite(n)) throw new Error("Shift is not a number");
+            if (d === "dec") n = -n;
+            n = modp(n, A.length);
+            return U(mapChars(S(b), A, a.alpha === "az", i => (i + n) % A.length));
+        }
+    },
+    caesarbf: {
+        name: "Caesar brute force", group: "Classical",
+        args: [ALPHA_ARG, CUSTOM_ARG, { k: "width", label: "Preview width", type: "text", def: "90", ph: "90" }],
+        run: (b, a) => {
+            const A = alphaOf(a), caseless = a.alpha === "az";
+            const s = S(b), w = Math.max(20, parseInt(a.width, 10) || 90);
+            const L = [];
+            for (let n = 1; n < A.length; n++) {
+                const t = mapChars(s, A, caseless, i => (i + n) % A.length).replace(/[\r\n]+/g, " ");
+                L.push("shift " + String(n).padStart(3) + "  " + t.slice(0, w));
+            }
+            return U(L.join("\n"));
+        }
+    },
+    atbash: {
+        name: "Atbash", group: "Classical",
+        args: [ALPHA_ARG, CUSTOM_ARG],
+        run: (b, a) => {
+            const A = alphaOf(a);
+            return U(mapChars(S(b), A, a.alpha === "az", i => A.length - 1 - i));
+        }
+    },
+    affine: {
+        name: "Affine", group: "Classical", dual: true,
+        args: [
+            { k: "a", label: "a (multiplier)", type: "text", def: "5", ph: "5" },
+            { k: "b", label: "b (shift)", type: "text", def: "8", ph: "8" },
+            ALPHA_ARG, CUSTOM_ARG
+        ],
+        run: (b, a, d) => {
+            const A = alphaOf(a), L = A.length;
+            const ma = parseInt(a.a, 10), mb = parseInt(a.b, 10);
+            if (!isFinite(ma) || !isFinite(mb)) throw new Error("a and b must be numbers");
+            if (d === "enc") return U(mapChars(S(b), A, a.alpha === "az", i => modp(ma * i + mb, L)));
+            const inv = modinv(ma, L);
+            return U(mapChars(S(b), A, a.alpha === "az", i => modp(inv * (i - mb), L)));
+        }
+    },
+    vigenere: {
+        name: "Vigenere", group: "Classical", dual: true,
+        args: [
+            { k: "key", label: "Key", type: "text", def: "", ph: "keyword" },
+            ALPHA_ARG, CUSTOM_ARG
+        ],
+        run: (b, a, d) => {
+            const A = alphaOf(a), caseless = a.alpha === "az", L = A.length;
+            const key = [];
+            for (const ch of String(a.key || "")) {
+                let i = A.indexOf(ch);
+                if (i < 0 && caseless) i = A.indexOf(ch.toLowerCase());
+                if (i >= 0) key.push(i);
+            }
+            if (!key.length) throw new Error("Vigenere needs a key made of characters from the chosen alphabet");
+            let k = 0, out = "";
+            for (const ch of S(b)) {
+                let i = A.indexOf(ch), up = false;
+                if (i < 0 && caseless) { i = A.indexOf(ch.toLowerCase()); up = i >= 0; }
+                if (i < 0) { out += ch; continue; }
+                const sh = d === "dec" ? -key[k % key.length] : key[k % key.length];
+                k++;
+                const c = A[modp(i + sh, L)];
+                out += up ? c.toUpperCase() : c;
+            }
+            return U(out);
+        }
+    },
+    substitute: {
+        name: "Substitution", group: "Classical", dual: true,
+        args: [
+            { k: "from", label: "Plain alphabet", type: "text", def: "abcdefghijklmnopqrstuvwxyz", ph: "abcdefghijklmnopqrstuvwxyz" },
+            { k: "to", label: "Cipher alphabet", type: "text", def: "", ph: "zyxwvutsrqponmlkjihgfedcba" },
+            { k: "case", label: "Keep case", type: "check", def: true }
+        ],
+        run: (b, a, d) => {
+            const from = a.from || "", to = a.to || "";
+            if (!from.length || from.length !== to.length)
+                throw new Error("The two alphabets must be the same length, got " + from.length + " and " + to.length);
+            const src = d === "enc" ? from : to, dst = d === "enc" ? to : from;
+            return U(Array.from(S(b), ch => {
+                let i = src.indexOf(ch);
+                if (i >= 0) return dst[i];
+                if (a.case) {
+                    i = src.indexOf(ch.toLowerCase());
+                    if (i >= 0) return dst[i].toUpperCase();
+                }
+                return ch;
+            }).join(""));
+        }
+    },
+    railfence: {
+        name: "Rail fence", group: "Classical", dual: true,
+        args: [
+            { k: "rails", label: "Rails", type: "text", def: "3", ph: "3" },
+            { k: "off", label: "Offset", type: "text", def: "0", ph: "0" }
+        ],
+        run: (b, a, d) => {
+            const n = parseInt(a.rails, 10), off = Math.max(0, parseInt(a.off, 10) || 0);
+            if (!isFinite(n) || n < 2) throw new Error("Rails must be 2 or more");
+            const s = S(b), p = railPattern(s.length, n, off);
+            if (d === "enc") {
+                const rows = Array.from({ length: n }, () => "");
+                p.forEach((r, i) => { rows[r] += s[i]; });
+                return U(rows.join(""));
+            }
+            const counts = new Array(n).fill(0);
+            p.forEach(r => counts[r]++);
+            const rows = [];
+            let at = 0;
+            for (let r = 0; r < n; r++) { rows.push(s.slice(at, at + counts[r])); at += counts[r]; }
+            const idx = new Array(n).fill(0);
+            return U(p.map(r => rows[r][idx[r]++]).join(""));
+        }
+    },
+    a1z26: {
+        name: "A1Z26", group: "Classical", dual: true,
+        args: [{ k: "delim", label: "Delimiter", type: "select", def: "space", opts: [["space", "Space"], ["dash", "Dash"], ["comma", "Comma"], ["line", "Line"]] }],
+        run: (b, a, d) => {
+            const AZ = "abcdefghijklmnopqrstuvwxyz";
+            const dl = { space: " ", dash: "-", comma: ",", line: "\n" }[a.delim];
+            if (d === "enc") {
+                return U(S(b).toLowerCase().split(/\s+/).filter(w => w).map(word =>
+                    Array.from(word, ch => AZ.indexOf(ch)).filter(i => i >= 0).map(i => String(i + 1)).join(dl)
+                ).filter(w => w).join(dl === " " ? "   " : " "));
+            }
+            return U(S(b).split(/[^0-9]+/).filter(x => x !== "").map(x => {
+                const n = parseInt(x, 10);
+                if (n < 1 || n > 26) throw new Error(x + " is not between 1 and 26");
+                return AZ[n - 1];
+            }).join(""));
+        }
+    },
+    morse: {
+        name: "Morse code", group: "Classical", dual: true,
+        args: [],
+        run: (b, a, d) => {
+            if (d === "enc") {
+                return U(S(b).toUpperCase().split(/\s+/).filter(w => w).map(word =>
+                    Array.from(word, ch => MORSE[ch] || "").filter(x => x).join(" ")
+                ).filter(w => w).join(" / "));
+            }
+            const t = S(b).trim().replace(/[_\u2013\u2014]/g, "-").replace(/\u00b7/g, ".");
+            return U(t.split(/\s*\/\s*|\s{3,}/).map(word =>
+                word.trim().split(/\s+/).filter(x => x).map(sym => {
+                    if (!(sym in MORSE_REV)) throw new Error("Not a morse symbol: " + sym);
+                    return MORSE_REV[sym];
+                }).join("")
+            ).filter(w => w).join(" "));
+        }
+    },
+    bacon: {
+        name: "Bacon cipher", group: "Classical", dual: true,
+        args: [
+            { k: "v26", label: "26 letter variant", type: "check", def: false },
+            { k: "marks", label: "Marks", type: "select", def: "AB", opts: [["AB", "A and B"], ["ab", "a and b"], ["01", "0 and 1"]] }
+        ],
+        run: (b, a, d) => {
+            const A = baconAlpha(a.v26), m = a.marks;
+            if (d === "enc") {
+                return U(Array.from(S(b).toUpperCase(), ch => {
+                    const i = A.indexOf(baconFold(ch, a.v26));
+                    if (i < 0) return /\s/.test(ch) ? " " : "";
+                    return i.toString(2).padStart(5, "0").replace(/0/g, m[0]).replace(/1/g, m[1]);
+                }).join("").replace(/\s+/g, " ").trim());
+            }
+            const bits = S(b).replace(/[^A-Za-z01]/g, "").replace(/[A0a]/g, "0").replace(/[B1b]/g, "1");
+            if (!bits.length || /[^01]/.test(bits)) throw new Error("Bacon input must use only two distinct marks");
+            if (bits.length % 5) throw new Error("Bacon input is not a whole number of five bit groups");
+            let out = "";
+            for (let i = 0; i < bits.length; i += 5) {
+                const v = parseInt(bits.substr(i, 5), 2);
+                out += v < A.length ? A[v] : "?";
+            }
+            return U(out);
+        }
+    },
+    polybius: {
+        name: "Polybius square", group: "Classical", dual: true,
+        args: [{ k: "key", label: "Keyword (optional)", type: "text", def: "", ph: "builds a keyed square" }],
+        run: (b, a, d) => {
+            const sq = polySquare(a.key);
+            if (d === "enc") {
+                return U(Array.from(S(b).toUpperCase().replace(/J/g, "I"), ch => {
+                    const i = sq.indexOf(ch);
+                    if (i < 0) return /\s/.test(ch) ? " " : "";
+                    return String(Math.floor(i / 5) + 1) + String((i % 5) + 1);
+                }).join(""));
+            }
+            const digits = S(b).replace(/[^1-5]/g, "");
+            if (digits.length % 2) throw new Error("Polybius input needs an even number of digits from 1 to 5");
+            let out = "";
+            for (let i = 0; i < digits.length; i += 2) out += sq[(+digits[i] - 1) * 5 + (+digits[i + 1] - 1)];
+            return U(out);
+        }
+    },
+
+    rc4: {
+        name: "RC4", group: "Crypto",
+        args: [
+            { k: "key", label: "Key", type: "text", def: "", ph: "key or hex" },
+            { k: "kf", label: "Key format", type: "select", def: "utf8", opts: [["utf8", "UTF-8"], ["hex", "Hex"], ["b64", "Base64"]] }
+        ],
+        run: (b, a) => rc4(keyBytes(a.key, a.kf), b)
+    },
+    xorbf: {
+        name: "XOR brute force", group: "Crypto",
+        args: [
+            { k: "only", label: "Only printable results", type: "check", def: true },
+            { k: "crib", label: "Crib", type: "text", def: "", ph: "text the result must contain" },
+            { k: "width", label: "Preview width", type: "text", def: "90", ph: "90" }
+        ],
+        run: (b, a) => {
+            if (!b.length) throw new Error("Nothing to brute force");
+            const w = Math.max(20, parseInt(a.width, 10) || 90);
+            const crib = (a.crib || "").toLowerCase();
+            const L = [];
+            for (let k = 1; k < 256; k++) {
+                const o = new Uint8Array(b.length);
+                for (let i = 0; i < b.length; i++) o[i] = b[i] ^ k;
+                if (a.only && printableScore(o) < 0.95) continue;
+                const p = preview(o, w);
+                if (crib && !p.toLowerCase().includes(crib)) continue;
+                L.push("0x" + k.toString(16).padStart(2, "0") + "  " + String(k).padStart(3) + "  " + p);
+            }
+            return U(L.length ? L.join("\n") : "No single byte key produced a match. Turn off the printable filter or drop the crib.");
+        }
+    }
+
+};
+
+const GROUPS = ["Encoding", "Classical", "Hashing", "Crypto", "Parsing", "Analysis", "Text"];
+
+/* ============================================================
+   State
+   ============================================================ */
+function blankState() {
+    return {
+        schema: APP.schema,
+        app: APP.id,
+        meta: { title: "", date: today() },
+        input: "",
+        recipe: [],
+        view: "text",
+        auto: true
+    };
+}
+let state = blankState();
+let errs = {};
+let lastOut = new Uint8Array(0);
+
+function persist() {
+    if (store.set("state", JSON.stringify(state))) return;
+    const lean = Object.assign({}, state, { input: "" });
+    store.set("state", JSON.stringify(lean));
+}
+/* Anything reaching this came from a file or from localStorage, so it is
+   treated as untrusted: unknown operations and unknown argument keys are
+   dropped, and every value is coerced to the type its argument expects. */
+function normalise() {
+    if (typeof state.input !== "string") state.input = "";
+    if (state.view !== "hex") state.view = "text";
+    state.auto = state.auto !== false;
+    if (!state.meta || typeof state.meta !== "object") state.meta = { title: "", date: today() };
+    state.meta.title = typeof state.meta.title === "string" ? state.meta.title : "";
+    if (!Array.isArray(state.recipe)) state.recipe = [];
+    state.recipe = state.recipe.filter(s => s && typeof s === "object" && OPS[s.op]).slice(0, 100);
+    state.recipe.forEach(s => {
+        s.id = typeof s.id === "string" ? s.id : Math.random().toString(36).slice(2, 8);
+        s.dir = s.dir === "dec" ? "dec" : "enc";
+        s.off = !!s.off;
+        const clean = {};
+        (OPS[s.op].args || []).forEach(a => {
+            const v = s.args && typeof s.args === "object" ? s.args[a.k] : undefined;
+            if (a.type === "check") clean[a.k] = v === undefined ? a.def : !!v;
+            else if (a.type === "select") clean[a.k] = a.opts.some(o => o[0] === v) ? v : a.def;
+            else clean[a.k] = typeof v === "string" ? v.slice(0, 4096) : a.def;
+        });
+        s.args = clean;
+    });
+}
+function restore() {
+    const raw = store.get("state");
+    if (!raw) return false;
+    try {
+        const d = JSON.parse(raw);
+        if (d && d.app === APP.id) { state = Object.assign(blankState(), d); normalise(); return true; }
+    } catch (e) {}
+    return false;
+}
+function argVals(step) {
+    const op = OPS[step.op], out = {};
+    (op.args || []).forEach(a => {
+        out[a.k] = (step.args && step.args[a.k] !== undefined) ? step.args[a.k] : a.def;
+    });
+    return out;
+}
+function addStep(id) {
+    const op = OPS[id];
+    if (!op) return;
+    const args = {};
+    (op.args || []).forEach(a => { args[a.k] = a.def; });
+    state.recipe.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), op: id, dir: "enc", off: false, args });
+    renderSteps();
+    persist();
+    queue();
+}
+
+/* ============================================================
+   Recipe UI
+   ============================================================ */
+function renderPalette() {
+    const host = $("#opList");
+    const q = ($("#opSearch").value || "").trim().toLowerCase();
+    host.textContent = "";
+    GROUPS.forEach(g => {
+        const ids = Object.keys(OPS).filter(k => OPS[k].group === g &&
+            (!q || OPS[k].name.toLowerCase().includes(q) || g.toLowerCase().includes(q)));
+        if (!ids.length) return;
+        host.appendChild(el("div", "grp", g));
+        ids.forEach(k => {
+            const b = el("button", "op-btn", OPS[k].name);
+            b.type = "button";
+            b.addEventListener("click", () => addStep(k));
+            host.appendChild(b);
+        });
+    });
+    if (!host.children.length) host.appendChild(el("div", "grp", "no match"));
+}
+
+const stepNodes = {};
+function renderSteps() {
+    const host = $("#steps");
+    host.textContent = "";
+    for (const k in stepNodes) delete stepNodes[k];
+
+    if (!state.recipe.length) {
+        host.appendChild(el("div", "empty", "No steps yet. Pick an operation on the left."));
+        return;
+    }
+
+    state.recipe.forEach((step, idx) => {
+        const op = OPS[step.op];
+        const root = el("div", "step" + (step.off ? " off" : ""));
+
+        const head = el("div", "step-head");
+        head.appendChild(el("span", "step-n", String(idx + 1)));
+        head.appendChild(el("span", "step-name", op ? op.name : step.op + " (unknown)"));
+
+        if (op && op.dual) {
+            const dirs = op.dirs || ["Encode", "Decode"];
+            const seg = el("div", "seg noprint");
+            [["enc", dirs[0]], ["dec", dirs[1]]].forEach(([v, label]) => {
+                const b = el("button", null, label);
+                b.type = "button";
+                b.setAttribute("aria-pressed", String(step.dir === v));
+                b.addEventListener("click", () => { step.dir = v; renderSteps(); persist(); queue(); });
+                seg.appendChild(b);
+            });
+            head.appendChild(seg);
+        }
+
+        const tools = el("div", "row noprint");
+        const mk = (txt, cls, title, fn, dis) => {
+            const b = el("button", "step-btn" + (cls ? " " + cls : ""), txt);
+            b.type = "button";
+            b.title = title;
+            b.disabled = !!dis;
+            b.addEventListener("click", fn);
+            tools.appendChild(b);
+            return b;
+        };
+        mk("^", null, "Move up", () => move(idx, -1), idx === 0);
+        mk("v", null, "Move down", () => move(idx, 1), idx === state.recipe.length - 1);
+        mk(step.off ? "off" : "on", null, "Enable or disable this step", () => {
+            step.off = !step.off; renderSteps(); persist(); queue();
+        });
+        mk("x", "rm", "Remove step", () => {
+            state.recipe.splice(idx, 1); renderSteps(); persist(); queue();
+        });
+        head.appendChild(tools);
+        root.appendChild(head);
+
+        if (op && op.args && op.args.length) {
+            const grid = el("div", "step-args");
+            const vals = argVals(step);
+            op.args.forEach(a => {
+                if (a.type === "check") {
+                    const wrap = el("div", "toggle-item");
+                    wrap.appendChild(el("span", "toggle-label", a.label));
+                    const tg = el("div", "toggle-switch" + (vals[a.k] ? " active" : ""));
+                    tg.setAttribute("role", "switch");
+                    tg.setAttribute("aria-checked", String(!!vals[a.k]));
+                    tg.tabIndex = 0;
+                    toggle(tg, on => { step.args[a.k] = on; persist(); queue(); });
+                    wrap.appendChild(tg);
+                    grid.appendChild(wrap);
+                    return;
+                }
+                const lab = el("label", "f");
+                lab.appendChild(el("span", "arg-label", a.label));
+                if (a.type === "select") {
+                    const sel = el("select", "field");
+                    a.opts.forEach(([v, t]) => {
+                        const o = el("option", null, t);
+                        o.value = v;
+                        sel.appendChild(o);
+                    });
+                    sel.value = vals[a.k];
+                    sel.addEventListener("change", () => { step.args[a.k] = sel.value; persist(); queue(); });
+                    lab.appendChild(sel);
+                } else {
+                    const inp = el("input", "field");
+                    inp.type = "text";
+                    inp.spellcheck = false;
+                    inp.autocomplete = "off";
+                    if (a.ph) inp.placeholder = a.ph;
+                    inp.value = vals[a.k];
+                    inp.addEventListener("input", () => { step.args[a.k] = inp.value; persist(); queue(); });
+                    lab.appendChild(inp);
+                }
+                grid.appendChild(lab);
+            });
+            root.appendChild(grid);
+        }
+
+        const err = el("div", "step-err");
+        err.hidden = true;
+        root.appendChild(err);
+        stepNodes[step.id] = { root, err };
+        host.appendChild(root);
+    });
+    markSteps();
+}
+function move(idx, by) {
+    const to = idx + by;
+    if (to < 0 || to >= state.recipe.length) return;
+    const [s] = state.recipe.splice(idx, 1);
+    state.recipe.splice(to, 0, s);
+    renderSteps();
+    persist();
+    queue();
+}
+function markSteps() {
+    state.recipe.forEach(step => {
+        const n = stepNodes[step.id];
+        if (!n) return;
+        const e = errs[step.id];
+        n.root.classList.toggle("bad", !!e);
+        n.err.hidden = !e;
+        n.err.textContent = e || "";
+    });
+}
+
+/* ============================================================
+   Brew
+   ============================================================ */
+let seq = 0;
+let queueT;
+function queue() {
+    clearTimeout(queueT);
+    if (!state.auto) { markSteps(); return; }
+    queueT = setTimeout(run, 200);
+}
+async function run() {
+    const mine = ++seq;
+    errs = {};
+    let data = U(state.input || "");
+    let failed = false;
+
+    for (const step of state.recipe) {
+        if (step.off) continue;
+        const op = OPS[step.op];
+        if (!op) continue;
+        try {
+            const r = await op.run(data, argVals(step), step.dir);
+            data = ArrayBuffer.isView(r) ? new Uint8Array(r.buffer, r.byteOffset, r.byteLength) : U(String(r));
+        } catch (e) {
+            errs[step.id] = (e && e.message) || String(e);
+            failed = true;
+            break;
+        }
+    }
+    if (mine !== seq) return;
+    lastOut = data;
+    markSteps();
+    renderOutput(failed);
+}
+
+const CAP = 300000;
+function hexdump(b) {
+    const lines = [];
+    const n = Math.min(b.length, 65536);
+    for (let i = 0; i < n; i += 16) {
+        const row = b.subarray(i, i + 16);
+        let hx = "", tx = "";
+        for (let j = 0; j < 16; j++) {
+            hx += j < row.length ? toHex(row.subarray(j, j + 1)) + " " : "   ";
+            if (j === 7) hx += " ";
+            if (j < row.length) tx += (row[j] >= 32 && row[j] < 127) ? String.fromCharCode(row[j]) : ".";
+        }
+        lines.push(i.toString(16).padStart(8, "0") + "  " + hx + " |" + tx + "|");
+    }
+    if (b.length > n) lines.push("... " + (b.length - n) + " more bytes not shown");
+    return lines.join("\n");
+}
+function renderOutput(failed) {
+    const pre = $("#output");
+    let text;
+    if (state.view === "hex") text = hexdump(lastOut);
+    else {
+        text = S(lastOut);
+        if (text.length > CAP) text = text.slice(0, CAP) + "\n... output truncated for display, download for the whole thing";
+    }
+    pre.textContent = text;
+
+    const st = $("#outStat");
+    st.textContent = "";
+    const put = (cls, t) => st.appendChild(el("span", cls, t));
+    if (failed) { put("bad", "recipe stopped at a failing step"); put(null, " - "); }
+    put("a", String(lastOut.length));
+    put(null, " bytes, ");
+    put("a", String(lastOut.length ? S(lastOut).split(/\r?\n/).length : 0));
+    put(null, " lines");
+    const active = state.recipe.filter(s => !s.off).length;
+    put(null, ", ");
+    put("a", String(active));
+    put(null, active === 1 ? " step" : " steps");
+}
+function renderInStat() {
+    const s = state.input || "";
+    const st = $("#inStat");
+    st.textContent = "";
+    st.appendChild(el("span", "a", String(U(s).length)));
+    st.appendChild(el("span", null, " bytes"));
+}
+
+/* ============================================================
+   Save, load, reset
+   ============================================================ */
+function saveJson() {
+    const out = JSON.parse(JSON.stringify(state));
+    out.exported = new Date().toISOString();
+    out.version = APP.version;
+    download(fname("json"), JSON.stringify(out, null, 2), "application/json");
+    notify("Saved");
+}
+function loadJson(text) {
+    let d;
+    try { d = JSON.parse(text); }
+    catch (e) { notify("That file is not valid JSON", true); return; }
+    if (!d || typeof d !== "object") { notify("That file is not a saved " + APP.id + " file", true); return; }
+    if (d.app && d.app !== APP.id &&
+        !confirm(`That file was saved by "${d.app}", not ${APP.id}. Load it anyway?`)) return;
+    if (d.schema > APP.schema &&
+        !confirm("That file was saved by a newer version of this tool. Some fields may be dropped. Continue?")) return;
+    state = Object.assign(blankState(), d);
+    normalise();
+    render();
+    notify("Loaded");
+}
+function reset() {
+    if (!confirm("Clear the recipe, the input and the saved state?")) return;
+    state = blankState();
+    errs = {};
+    store.del("state");
+    render();
+    notify("Cleared");
+}
+
+/* ============================================================
+   Wiring
+   ============================================================ */
+function render() {
+    $("#mTitle").value = state.meta.title || "";
+    $("#input").value = state.input || "";
+    $("#outView").value = state.view || "text";
+    $("#tgAuto").classList.toggle("active", !!state.auto);
+    $("#tgAuto").setAttribute("aria-checked", String(!!state.auto));
+    renderPalette();
+    renderSteps();
+    renderInStat();
+    persist();
+    run();
+}
+
+$("#mTitle").addEventListener("input", e => { state.meta.title = e.target.value; persist(); });
+$("#opSearch").addEventListener("input", renderPalette);
+$("#btnClear").addEventListener("click", () => {
+    if (!state.recipe.length) return;
+    state.recipe = [];
+    errs = {};
+    renderSteps();
+    persist();
+    queue();
+});
+$("#input").addEventListener("input", e => {
+    state.input = e.target.value;
+    renderInStat();
+    persist();
+    queue();
+});
+$("#outView").addEventListener("change", e => {
+    state.view = e.target.value;
+    persist();
+    renderOutput(Object.keys(errs).length > 0);
+});
+$("#btnBrew").addEventListener("click", run);
+$("#btnSave").addEventListener("click", saveJson);
+$("#btnLoad").addEventListener("click", () => $("#fileIn").click());
+$("#fileIn").addEventListener("change", e => {
+    if (e.target.files[0]) read(e.target.files[0], loadJson);
+    e.target.value = "";
+});
+$("#btnPrint").addEventListener("click", () => window.print());
+$("#btnReset").addEventListener("click", reset);
+$("#btnDl").addEventListener("click", () => {
+    if (!lastOut.length) { notify("Nothing to download", true); return; }
+    download(fname("txt"), lastOut, "application/octet-stream");
+});
+$("#btnCopy").addEventListener("click", async () => {
+    const text = $("#output").textContent;
+    if (!text) { notify("Nothing to copy", true); return; }
+    try {
+        await navigator.clipboard.writeText(text);
+        notify("Copied");
+    } catch (e) {
+        const ta = el("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        let ok = false;
+        try { ok = document.execCommand("copy"); } catch (e2) {}
+        ta.remove();
+        notify(ok ? "Copied" : "Could not copy, select the output and copy it", !ok);
+    }
+});
+toggle($("#tgAuto"), on => {
+    state.auto = on;
+    persist();
+    if (on) run();
+});
+
+document.addEventListener("keydown", e => {
+    if (!(e.ctrlKey || e.metaKey)) return;
+    const k = e.key.toLowerCase();
+    if (k === "s") { e.preventDefault(); saveJson(); }
+    if (k === "o") { e.preventDefault(); $("#fileIn").click(); }
+    if (e.key === "Enter") { e.preventDefault(); run(); }
+});
+
+/* ---------- about tab op list ---------- */
+(function docs() {
+    const host = $("#opDocs");
+    GROUPS.forEach(g => {
+        const ids = Object.keys(OPS).filter(k => OPS[k].group === g);
+        if (!ids.length) return;
+        const p = el("div");
+        p.appendChild(el("b", null, g + ": "));
+        p.appendChild(el("span", null, ids.map(k => {
+            const o = OPS[k];
+            return o.name + (o.dual ? " (" + (o.dirs || ["encode", "decode"]).join(" / ").toLowerCase() + ")" : "");
+        }).join(", ")));
+        p.style.marginBottom = "6px";
+        host.appendChild(p);
+    });
+})();
+
+restore();
+render();
+</script>
+</body>
+</html>
