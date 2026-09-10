@@ -1,6 +1,6 @@
 # cyber-barista &#9749;
 
-A small, offline CyberChef. Order the operations, paste the beans, brew. One HTML file, no build step, no dependencies, no network calls. Open `index.html` and it works, including from `file://`.
+A small, offline text encoding/decoding tool. Order the operations, paste the beans, brew. One HTML file, no build step, no dependencies, no network calls. Open index.html and it works, including from file://.
 
 Every step takes bytes and returns bytes, so binary output survives into the next step.
 
