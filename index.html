@@ -1052,7 +1052,7 @@ function epochMs(n, unit) {
 }
 
 /* ---------- classical alphabets ---------- */
-const ASCII_PRINT = (() => { let s = ""; for (let i = 32; i < 127; i++) s += String.fromCharCode(i); return s; })();
+const ASCII_PRINT = (() => { let s = ""; for (let i = 33; i < 127; i++) s += String.fromCharCode(i); return s; })();
 const ALPHABETS = {
     az:    "abcdefghijklmnopqrstuvwxyz",
     AZaz:  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
