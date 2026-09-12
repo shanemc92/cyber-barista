@@ -1,6 +1,6 @@
 # cyber-barista &#9749;
 
-A small, offline text encoding/decoding tool. Order the operations, paste the beans, brew. One HTML file, no build step, no dependencies, no network calls. Open index.html and it works, including from file://.
+A small, offline CyberChef. Order the operations, paste the beans, brew. One HTML file, no build step, no dependencies, no network calls. Open `index.html` and it works, including from `file://`.
 
 Every step takes bytes and returns bytes, so binary output survives into the next step.
 
@@ -15,10 +15,18 @@ Every step takes bytes and returns bytes, so binary output survives into the nex
 | Hashing | Hash (MD5, SHA-1, SHA-256, SHA-384, SHA-512, CRC-32), HMAC |
 | Crypto | XOR, XOR brute force, RC4, ROT13 / ROT-N / ROT47 |
 | Parsing | JWT decode with optional HS256 verification, JSON beautify or minify, Timestamp conversion, Defang and refang |
-| Analysis | Entropy report with byte distribution, Extract (IPv4, IPv6, domains, URLs, emails, hashes), Strings |
+| Analysis | **What is this?**, Entropy report with byte distribution, Extract (IPv4, IPv6, domains, URLs, emails, hashes), Strings |
 | Text | Find and replace with regex, Line tools, Change case, Reverse, Strip |
 
 Dual operations show an encode / decode switch on the step. Single operations do not.
+
+## What is this?
+
+Paste a blob and it tells you what the blob is instead of converting it. It recognises JWTs (including whether they are expired), UUIDs v1 to v7 with the embedded timestamp and node MAC decoded, MAC addresses with the vendor block and the local and multicast bits, IPv4 and IPv6 with their reserved range, hex by length, epoch timestamps at every unit including Windows FILETIME, ISO 8601 dates, Windows SIDs with well known RIDs, PEM blocks, SSH public keys, `/etc/shadow` and bcrypt and Kerberos hash formats, API key and token prefixes, payment cards by Luhn and prefix, IBANs by their mod 97 check, Bitcoin and Ethereum addresses, file magic bytes for about fifty formats, and the usual text shapes: JSON, XML, cron, semver, morse, hexdump, percent encoding.
+
+With **Decode and look inside** on, anything that is plainly Base64, Base32 or hex and not already identified gets decoded and checked again, so you get answers like "Base64 of a gzip stream that decompresses to JSON" or "Base64 of UTF-16LE text, which is what PowerShell `-EncodedCommand` uses". It stops speculating once something has matched outright.
+
+It is all shape, prefixes, magic bytes, bit flags and check digits, plus a short built-in list of common MAC blocks. There is no lookup and nothing to go stale, and a miss on the vendor block means only that it was not in the short list.
 
 ## Using it
 

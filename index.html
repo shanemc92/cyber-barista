@@ -1205,6 +1205,213 @@ const printableScore = b => {
 };
 
 /* ============================================================
+   Identification tables. All structural: magic bytes, prefixes,
+   check digits and bit flags, so none of it needs a lookup.
+   ============================================================ */
+const MAGIC = [
+    ["89504e470d0a1a0a", "PNG image"],
+    ["ffd8ff", "JPEG image"],
+    ["474946383961", "GIF image, 89a"],
+    ["474946383761", "GIF image, 87a"],
+    ["25504446", "PDF document"],
+    ["504b0304", "ZIP archive, also docx, xlsx, pptx, jar, apk, odt"],
+    ["504b0506", "empty ZIP archive"],
+    ["504b0708", "spanned ZIP archive"],
+    ["1f8b08", "gzip stream"],
+    ["425a68", "bzip2 archive"],
+    ["fd377a585a00", "xz archive"],
+    ["377abcaf271c", "7-Zip archive"],
+    ["526172211a07", "RAR archive"],
+    ["7f454c46", "ELF binary"],
+    ["4d5a", "DOS MZ header, almost always a Windows PE, exe or dll"],
+    ["cafebabe", "Java class file, or a Mach-O fat binary"],
+    ["feedface", "Mach-O binary, 32 bit"],
+    ["feedfacf", "Mach-O binary, 64 bit"],
+    ["cffaedfe", "Mach-O binary, little endian"],
+    ["0061736d", "WebAssembly module"],
+    ["53516c69746520666f726d6174203300", "SQLite 3 database"],
+    ["d0cf11e0a1b11ae1", "OLE2 container, legacy Office doc, xls, msi or msg"],
+    ["52494646", "RIFF container, wav, avi or webp"],
+    ["4f676753", "Ogg container"],
+    ["494433", "MP3 with an ID3 tag"],
+    ["664c6143", "FLAC audio"],
+    ["1a45dfa3", "Matroska, mkv or webm"],
+    ["00000100", "Windows icon, ico"],
+    ["424d", "BMP image"],
+    ["00010000", "TrueType font"],
+    ["4f54544f", "OpenType font"],
+    ["774f4646", "WOFF font"],
+    ["d4c3b2a1", "pcap capture, little endian"],
+    ["a1b2c3d4", "pcap capture, big endian"],
+    ["0a0d0d0a", "pcapng capture"],
+    ["4c000000", "Windows shortcut, lnk"],
+    ["3c3f786d6c", "XML declaration"],
+    ["3c21444f43", "HTML document"],
+    ["7b5c727466", "RTF document"],
+    ["38425053", "Photoshop PSD"],
+    ["67676d6c", "GGML model"],
+    ["4d444d50", "Windows minidump"],
+    ["78da", "zlib stream, best compression"],
+    ["789c", "zlib stream, default compression"],
+    ["7801", "zlib stream, no compression"]
+];
+/* A short list of blocks that turn up constantly in security work. It is not
+   the IEEE registry, so a miss means nothing. */
+const OUI = {
+    "005056": "VMware, vCenter assigned range",
+    "000c29": "VMware",
+    "000569": "VMware",
+    "001c14": "VMware",
+    "00155d": "Microsoft Hyper-V",
+    "080027": "Oracle VirtualBox",
+    "0a0027": "VirtualBox host-only adapter",
+    "525400": "QEMU or KVM",
+    "00163e": "Xen",
+    "001c42": "Parallels",
+    "b827eb": "Raspberry Pi Foundation",
+    "dca632": "Raspberry Pi Trading",
+    "e45f01": "Raspberry Pi Trading",
+    "2ccf67": "Raspberry Pi",
+    "00000c": "Cisco",
+    "000c41": "Cisco-Linksys",
+    "00005e": "IANA, used by VRRP virtual addresses",
+    "0050c2": "IEEE registration authority, small block assignment",
+    "acde48": "IEEE documentation example block"
+};
+const CARD_BRANDS = [
+    [/^4/, "Visa"],
+    [/^5[1-5]/, "Mastercard"],
+    [/^2(2[2-9][1-9]|[3-6]|7[01]|720)/, "Mastercard, 2-series"],
+    [/^3[47]/, "American Express"],
+    [/^6(011|5|4[4-9])/, "Discover"],
+    [/^3(0[0-5]|6|8)/, "Diners Club"],
+    [/^35(2[89]|[3-8])/, "JCB"],
+    [/^62/, "UnionPay"],
+    [/^(50|5[6-9]|6[07]|6304)/, "Maestro or similar"]
+];
+const HASH_LEN = {
+    8: "CRC-32, or any 4 byte value",
+    16: "CRC-64, or any 8 byte value",
+    24: "half of an MD5, or any 12 byte value",
+    32: "MD5, MD4, NTLM or LM, all 16 bytes",
+    40: "SHA-1 or RIPEMD-160, both 20 bytes",
+    48: "Tiger-192, or any 24 byte value",
+    56: "SHA-224 or SHA3-224, both 28 bytes",
+    64: "SHA-256, SHA3-256, BLAKE2s-256 or Keccak-256, all 32 bytes",
+    96: "SHA-384 or SHA3-384, both 48 bytes",
+    128: "SHA-512, SHA3-512 or BLAKE2b-512, all 64 bytes"
+};
+const SECRET_PREFIX = [
+    [/^gh[pousr]_[A-Za-z0-9]{36,}$/, "GitHub personal access, OAuth or server token"],
+    [/^github_pat_[A-Za-z0-9_]{20,}$/, "GitHub fine grained personal access token"],
+    [/^xox[baprs]-[A-Za-z0-9-]{10,}$/, "Slack token"],
+    [/^(AKIA|ASIA|AIDA|AROA|ANPA|AIPA)[A-Z0-9]{16}$/, "AWS access key id"],
+    [/^(sk|pk|rk)_(live|test)_[A-Za-z0-9]{10,}$/, "Stripe API key"],
+    [/^AIza[A-Za-z0-9_-]{35}$/, "Google API key"],
+    [/^ya29\.[A-Za-z0-9_-]{20,}$/, "Google OAuth access token"],
+    [/^npm_[A-Za-z0-9]{36}$/, "npm access token"],
+    [/^sk-[A-Za-z0-9_-]{20,}$/, "OpenAI style API key"],
+    [/^SG\.[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{16,}$/, "SendGrid API key"],
+    [/^glpat-[A-Za-z0-9_-]{20}$/, "GitLab personal access token"],
+    [/^dop_v1_[a-f0-9]{64}$/, "DigitalOcean personal access token"],
+    [/^shp(at|ca|pa|ss)_[a-fA-F0-9]{32}$/, "Shopify access token"],
+    [/^\d{8,10}:[A-Za-z0-9_-]{35}$/, "Telegram bot token"],
+    [/^discord\.[A-Za-z0-9_-]+$/i, "Discord token"],
+    [/^eyJ[A-Za-z0-9_-]{6,}$/, "start of a base64url JSON object, often a truncated JWT"]
+];
+const HASH_FORMAT = [
+    [/^\$2[abxy]?\$(\d\d)\$[./A-Za-z0-9]{53}$/, "bcrypt hash, cost factor $1"],
+    [/^\$argon2(id|i|d)\$/, "Argon2 hash"],
+    [/^\$1\$/, "md5crypt hash, classic Unix"],
+    [/^\$5\$/, "sha256crypt hash"],
+    [/^\$6\$/, "sha512crypt hash, common in modern /etc/shadow"],
+    [/^\$y\$/, "yescrypt hash, default on recent Debian and Fedora"],
+    [/^\$7\$/, "scrypt hash"],
+    [/^\$apr1\$/, "Apache apr1 md5 hash, htpasswd"],
+    [/^\{SSHA\}/, "salted SHA-1, LDAP style"],
+    [/^pbkdf2_(sha256|sha1)\$\d+\$/, "Django PBKDF2 hash"],
+    [/^\*[A-F0-9]{40}$/i, "MySQL 4.1 and later password hash"],
+    [/^[a-f0-9]{32}:[a-f0-9]{32}$/i, "LM:NTLM pair, as dumped by secretsdump or pwdump"],
+    [/^\$krb5(tgs|asrep)\$/, "Kerberos hash, kerberoasting or AS-REP roasting output"],
+    [/^\$NT\$[a-f0-9]{32}$/i, "NT hash in John format"],
+    [/^\$DCC2\$/, "domain cached credentials, mscash2"]
+];
+const PEM_KIND = {
+    CERTIFICATE: "X.509 certificate",
+    "CERTIFICATE REQUEST": "PKCS#10 certificate signing request",
+    "NEW CERTIFICATE REQUEST": "PKCS#10 certificate signing request",
+    "PRIVATE KEY": "PKCS#8 private key, unencrypted",
+    "ENCRYPTED PRIVATE KEY": "PKCS#8 private key, encrypted",
+    "RSA PRIVATE KEY": "PKCS#1 RSA private key",
+    "EC PRIVATE KEY": "SEC1 elliptic curve private key",
+    "OPENSSH PRIVATE KEY": "OpenSSH private key",
+    "PUBLIC KEY": "SubjectPublicKeyInfo public key",
+    "RSA PUBLIC KEY": "PKCS#1 RSA public key",
+    "DH PARAMETERS": "Diffie-Hellman parameters",
+    "X509 CRL": "certificate revocation list",
+    "PKCS7": "PKCS#7 signed data",
+    "CMS": "CMS message",
+    "PGP PUBLIC KEY BLOCK": "PGP public key",
+    "PGP PRIVATE KEY BLOCK": "PGP private key",
+    "PGP MESSAGE": "PGP message",
+    "PGP SIGNATURE": "PGP signature"
+};
+
+function luhn(d) {
+    let sum = 0, alt = false;
+    for (let i = d.length - 1; i >= 0; i--) {
+        let n = +d[i];
+        if (alt) { n *= 2; if (n > 9) n -= 9; }
+        sum += n;
+        alt = !alt;
+    }
+    return sum % 10 === 0;
+}
+function ibanOk(s) {
+    const t = s.replace(/\s+/g, "").toUpperCase();
+    if (!/^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/.test(t)) return false;
+    const r = t.slice(4) + t.slice(0, 4);
+    let rem = 0;
+    for (const ch of r) {
+        const v = /\d/.test(ch) ? ch : String(ch.charCodeAt(0) - 55);
+        for (const dg of v) rem = (rem * 10 + +dg) % 97;
+    }
+    return rem === 1;
+}
+function magicOf(b) {
+    const h = toHex(b.subarray(0, 32));
+    for (const [p, label] of MAGIC) if (h.startsWith(p)) return label;
+    if (b.length > 262 && S(b.subarray(257, 262)) === "ustar") return "tar archive";
+    return null;
+}
+function ipv4Class(ip) {
+    const o = ip.split(".").map(Number);
+    const n = ((o[0] << 24) >>> 0) + (o[1] << 16) + (o[2] << 8) + o[3];
+    const inR = (a, bits) => {
+        const p = a.split(".").map(Number);
+        const base = ((p[0] << 24) >>> 0) + (p[1] << 16) + (p[2] << 8) + p[3];
+        const mask = bits === 0 ? 0 : (0xffffffff << (32 - bits)) >>> 0;
+        return (n & mask) >>> 0 === (base & mask) >>> 0;
+    };
+    if (inR("10.0.0.0", 8) || inR("172.16.0.0", 12) || inR("192.168.0.0", 16)) return "RFC 1918 private";
+    if (inR("127.0.0.0", 8)) return "loopback";
+    if (inR("169.254.0.0", 16)) return "link local, APIPA";
+    if (inR("100.64.0.0", 10)) return "RFC 6598 carrier grade NAT";
+    if (inR("224.0.0.0", 4)) return "multicast";
+    if (inR("240.0.0.0", 4)) return "reserved";
+    if (inR("0.0.0.0", 8)) return "this network, 0.0.0.0/8";
+    if (inR("192.0.2.0", 24) || inR("198.51.100.0", 24) || inR("203.0.113.0", 24)) return "documentation range, RFC 5737";
+    return "public unicast";
+}
+function isB64(s, url) {
+    const re = url ? /^[A-Za-z0-9_-]+={0,2}$/ : /^[A-Za-z0-9+/]+={0,2}$/;
+    return s.length >= 8 && re.test(s);
+}
+function jsonTry(s) {
+    try { return JSON.parse(s); } catch (e) { return null; }
+}
+
+/* ============================================================
    Operations
    ============================================================ */
 const OPS = {
@@ -1891,6 +2098,365 @@ const OPS = {
                 L.push("0x" + k.toString(16).padStart(2, "0") + "  " + String(k).padStart(3) + "  " + p);
             }
             return U(L.length ? L.join("\n") : "No single byte key produced a match. Turn off the printable filter or drop the crib.");
+        }
+    },
+
+    identify: {
+        name: "What is this?", group: "Analysis",
+        args: [{ k: "deep", label: "Decode and look inside", type: "check", def: true }],
+        run: async (b, a) => {
+            const raw = S(b);
+            const t = raw.trim();
+            const nw = t.replace(/\s+/g, "");
+            const hits = [];
+            const add = (c, what, detail) => hits.push({ c, what, detail: detail || [] });
+            const L = [];
+
+            /* ---------- input facts ---------- */
+            const shannon = by => {
+                if (!by.length) return 0;
+                const f = new Array(256).fill(0);
+                for (let i = 0; i < by.length; i++) f[by[i]]++;
+                let h = 0;
+                for (let i = 0; i < 256; i++) if (f[i]) { const p = f[i] / by.length; h -= p * Math.log2(p); }
+                return h;
+            };
+            const charset = s =>
+                !s.length ? "empty" :
+                /^[0-9]+$/.test(s) ? "decimal digits only" :
+                /^-?[0-9]+$/.test(s) ? "a signed decimal number" :
+                /^[01]+$/.test(s) ? "binary digits only" :
+                /^[0-9a-f]+$/.test(s) ? "hex digits, lower case" :
+                /^[0-9A-F]+$/.test(s) ? "hex digits, upper case" :
+                /^[0-9a-fA-F]+$/.test(s) ? "hex digits, mixed case" :
+                /^[A-Z2-7]+=*$/.test(s) ? "the Base32 alphabet" :
+                /^[A-Za-z0-9+/]+=*$/.test(s) ? "the standard Base64 alphabet" :
+                /^[A-Za-z0-9_-]+=*$/.test(s) ? "the URL safe Base64 alphabet" :
+                /^[\x20-\x7e\s]*$/.test(s) ? "printable ASCII" :
+                "mixed, including bytes outside ASCII";
+
+            L.push("== input ==");
+            L.push("size         " + b.length + " bytes, " + raw.length + " characters, " + raw.split(/\r?\n/).length + " lines");
+            L.push("charset      " + charset(nw));
+            L.push("printable    " + Math.round(printableScore(b) * 100) + "%");
+            L.push("entropy      " + shannon(b).toFixed(2) + " bits per byte");
+
+            /* ---------- file magic ---------- */
+            const mag = magicOf(b);
+            if (mag) add("strong", mag + ", identified by its magic bytes", ["first bytes: " + toHex(b.subarray(0, 8))]);
+            if (/^\xef\xbb\xbf/.test(raw)) add("strong", "text with a UTF-8 byte order mark");
+            if (b.length > 1 && ((b[0] === 0xff && b[1] === 0xfe) || (b[0] === 0xfe && b[1] === 0xff)))
+                add("strong", "text with a UTF-16 byte order mark, " + (b[0] === 0xff ? "little" : "big") + " endian");
+
+            /* ---------- pem and keys ---------- */
+            const pem = t.match(/-----BEGIN ([A-Z0-9 #]+)-----/);
+            if (pem) {
+                const kind = PEM_KIND[pem[1]] || "PEM block of type " + pem[1];
+                const body = t.replace(/-----[^-]+-----/g, "").replace(/\s+/g, "");
+                const d = ["label: " + pem[1]];
+                if (isB64(body, false)) {
+                    const der = b64dec(body, "std");
+                    d.push("base64 body decodes to " + der.length + " bytes of DER");
+                    if (der[0] === 0x30) d.push("starts with an ASN.1 SEQUENCE tag, which is what DER should look like");
+                }
+                if (!/-----END/.test(t)) d.push("no END line, the block is truncated");
+                add("strong", kind + ", PEM encoded", d);
+            }
+            const ssh = t.match(/^(ssh-rsa|ssh-ed25519|ssh-dss|ecdsa-sha2-[a-z0-9-]+|sk-ssh-ed25519@openssh\.com|sk-ecdsa-sha2-[a-z0-9-]+@openssh\.com)\s+([A-Za-z0-9+/=]+)(\s+(.*))?$/);
+            if (ssh) {
+                const d = ["algorithm: " + ssh[1]];
+                try {
+                    const kb = b64dec(ssh[2], "std");
+                    const n = (kb[0] << 24) | (kb[1] << 16) | (kb[2] << 8) | kb[3];
+                    if (n > 0 && n < 64) d.push("embedded type string: " + S(kb.subarray(4, 4 + n)));
+                    d.push("key blob is " + kb.length + " bytes");
+                } catch (e) {}
+                if (ssh[4]) d.push("comment: " + ssh[4].trim());
+                add("strong", "SSH public key, authorized_keys format", d);
+            }
+
+            /* ---------- jwt ---------- */
+            const jwtM = t.replace(/^Bearer\s+/i, "").match(/^([A-Za-z0-9_-]{4,})\.([A-Za-z0-9_-]{4,})(?:\.([A-Za-z0-9_-]*))?$/);
+            if (jwtM) {
+                const head = jsonTry(S(b64dec(jwtM[1], "url")));
+                if (head && (head.alg || head.typ)) {
+                    const body = jsonTry(S(b64dec(jwtM[2], "url")));
+                    const d = ["alg: " + (head.alg || "none stated") + (head.typ ? ", typ: " + head.typ : "")];
+                    if (head.kid) d.push("kid: " + head.kid);
+                    if (/^HS/.test(String(head.alg))) d.push("HMAC signed, so the same secret verifies and signs it");
+                    else if (/^(RS|PS|ES|Ed)/.test(String(head.alg))) d.push("asymmetric signature, verifying needs the public key");
+                    else if (String(head.alg).toLowerCase() === "none") d.push("alg is none, an unsigned token");
+                    if (body) {
+                        const claims = Object.keys(body).slice(0, 12).join(", ");
+                        d.push("payload claims: " + claims + (Object.keys(body).length > 12 ? ", ..." : ""));
+                        ["iat", "nbf", "exp"].forEach(k => {
+                            if (typeof body[k] === "number") {
+                                const ms = epochMs(body[k], "auto");
+                                d.push(k + ": " + utc(new Date(ms)) + " (" + rel(ms) + ")");
+                            }
+                        });
+                        if (typeof body.exp === "number")
+                            d.push(epochMs(body.exp, "auto") < Date.now() ? "this token is expired" : "not expired yet");
+                    }
+                    d.push(jwtM[3] === undefined ? "only two parts, the signature is missing" :
+                           jwtM[3] === "" ? "third part is empty, unsecured token" :
+                           "signature is " + b64dec(jwtM[3], "url").length + " bytes" +
+                           (b64dec(jwtM[3], "url").length < 16 ? ", too short for any real algorithm, so this token is truncated or made up" : ""));
+                    d.push("use the JWT decode operation for the full header and payload");
+                    add("strong", "JWT, a JSON Web Token", d);
+                }
+            }
+
+            /* ---------- uuid ---------- */
+            const uu = nw.match(/^\{?([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12})\}?$/i);
+            if (uu) {
+                const hexAll = (uu[1] + uu[2] + uu[3] + uu[4] + uu[5]).toLowerCase();
+                const ver = parseInt(uu[3][0], 16);
+                const varNib = parseInt(uu[4][0], 16);
+                const variant = varNib >= 8 && varNib <= 11 ? "RFC 4122" : varNib <= 7 ? "reserved, NCS backward compatible" : varNib <= 13 ? "reserved, Microsoft GUID" : "reserved, future";
+                const d = ["version " + ver + ", variant " + variant];
+                if (hexAll === "0".repeat(32)) d.push("this is the nil UUID");
+                else if (hexAll === "f".repeat(32)) d.push("this is the max UUID");
+                else if (ver === 4) d.push("version 4 means random, so there is nothing encoded in it to recover");
+                else if (ver === 1 || ver === 6) {
+                    const ticks = ver === 1
+                        ? BigInt("0x" + uu[3].slice(1) + uu[2] + uu[1])
+                        : BigInt("0x" + uu[1] + uu[2] + uu[3].slice(1));
+                    const ms = Number(ticks / 10000n) - 12219292800000;
+                    const dt = new Date(ms);
+                    if (!isNaN(dt.getTime())) d.push("embedded timestamp: " + utc(dt) + " (" + rel(ms) + ")");
+                    const mac = uu[5].match(/../g).join(":");
+                    const oui = OUI[uu[5].slice(0, 6).toLowerCase()];
+                    d.push("node field: " + mac + (parseInt(uu[5].slice(0, 2), 16) & 2 ? ", locally administered so probably random" : ", looks like a real MAC" + (oui ? " from " + oui : "")));
+                } else if (ver === 7) {
+                    const ms = Number(BigInt("0x" + uu[1] + uu[2]));
+                    d.push("embedded unix millisecond timestamp: " + utc(new Date(ms)) + " (" + rel(ms) + ")");
+                } else if (ver === 3 || ver === 5) d.push("version " + ver + " is a " + (ver === 3 ? "MD5" : "SHA-1") + " hash of a namespace and a name, not reversible");
+                add("strong", "UUID" + (varNib >= 12 ? " or Microsoft GUID" : ""), d);
+            }
+
+            /* ---------- mac address ---------- */
+            const macM = nw.match(/^([0-9a-f]{2})[:-]([0-9a-f]{2})[:-]([0-9a-f]{2})[:-]([0-9a-f]{2})[:-]([0-9a-f]{2})[:-]([0-9a-f]{2})$/i) ||
+                         nw.match(/^([0-9a-f]{2})([0-9a-f]{2})\.([0-9a-f]{2})([0-9a-f]{2})\.([0-9a-f]{2})([0-9a-f]{2})$/i);
+            const macHex = macM ? macM.slice(1).join("").toLowerCase() : (/^[0-9a-f]{12}$/i.test(nw) ? nw.toLowerCase() : null);
+            if (macHex) {
+                const first = parseInt(macHex.slice(0, 2), 16);
+                const d = [];
+                const oui = OUI[macHex.slice(0, 6)];
+                if (oui) d.push("OUI " + macHex.match(/../g).slice(0, 3).join(":") + " is " + oui);
+                else if (macHex.slice(0, 4) === "0242") d.push("02:42 is the range Docker uses for container interfaces");
+                else d.push("OUI " + macHex.match(/../g).slice(0, 3).join(":") + " is not in the short list built into this tool, check the IEEE registry");
+                d.push(first & 1 ? "multicast bit is set, this is a group address, not a single interface" : "unicast");
+                d.push(first & 2 ? "locally administered bit is set, so it was assigned by software: a VM, a container, or MAC randomisation" : "globally unique, assigned from a vendor's OUI");
+                add(macM ? "strong" : "possible", "MAC address" + (macM ? "" : ", 12 hex digits could also be 6 raw bytes"), d);
+            }
+
+            /* ---------- addresses ---------- */
+            const ipM = t.match(/^(\d{1,3}(?:\.\d{1,3}){3})(?:\/(\d{1,2}))?(?::(\d{1,5}))?$/);
+            if (ipM && okIp(ipM[1])) {
+                const d = [ipv4Class(ipM[1])];
+                if (ipM[2]) d.push("CIDR prefix /" + ipM[2] + ", " + (Math.pow(2, 32 - +ipM[2])) + " addresses");
+                if (ipM[3]) d.push("with port " + ipM[3]);
+                add("strong", "IPv4 address" + (ipM[2] ? " with a CIDR prefix" : ipM[3] ? " and port" : ""), d);
+            }
+            if (/^[0-9a-f:]{2,39}$/i.test(t) && t.includes("::") || /^(?:[0-9a-f]{1,4}:){7}[0-9a-f]{1,4}$/i.test(t)) {
+                const low = t.toLowerCase();
+                const d = [];
+                if (low === "::1") d.push("loopback");
+                else if (low === "::") d.push("unspecified address");
+                else if (low.startsWith("fe80")) d.push("link local");
+                else if (/^f[cd]/.test(low)) d.push("unique local, the IPv6 equivalent of RFC 1918");
+                else if (low.startsWith("ff")) d.push("multicast");
+                else if (low.startsWith("2001:db8")) d.push("documentation range");
+                else d.push("global unicast, most likely routable");
+                add("likely", "IPv6 address", d);
+            }
+            if (/^[a-z0-9][a-z0-9.-]*\.[a-z]{2,24}$/i.test(t) && !/\s/.test(t) && !jwtM && t.length < 254)
+                add("likely", "domain name", ["labels: " + t.split(".").length + ", TLD: ." + t.split(".").pop().toLowerCase()]);
+            if (RX.email.test(t) && t.split("@").length === 2) add("strong", "email address", ["domain: " + t.split("@")[1]]);
+            RX.email.lastIndex = 0;
+            const urlM = t.match(/^([a-z][a-z0-9+.-]{1,20}):\/\/([^/?#\s]+)([^\s]*)$/i);
+            if (urlM) add("strong", "URL", ["scheme: " + urlM[1].toLowerCase(), "host: " + urlM[2], urlM[3] ? "path and query: " + urlM[3].slice(0, 80) : "no path"]);
+            if (/\[\.\]|\[:\/\/\]|\bhxxps?\b|\[@\]|\(dot\)/i.test(t))
+                add("strong", "a defanged indicator", ["refanged: " + fangText(t).slice(0, 120), "use Defang in the Fang direction to undo it"]);
+
+            /* ---------- numbers and timestamps ---------- */
+            if (/^-?\d{1,20}$/.test(nw)) {
+                const n = Number(nw);
+                const d = [];
+                const plausible = ms => { const y = new Date(ms).getUTCFullYear(); return y >= 1990 && y <= 2100; };
+                [["s", "seconds"], ["ms", "milliseconds"], ["us", "microseconds"], ["ns", "nanoseconds"], ["ft", "Windows FILETIME, 100ns since 1601"]].forEach(([u, label]) => {
+                    const ms = epochMs(n, u);
+                    if (plausible(ms)) d.push("as " + label + ": " + utc(new Date(ms)) + " (" + rel(ms) + ")");
+                });
+                if (d.length) add("likely", "a unix style timestamp, " + nw.length + " digits", d.concat(["the digit count is the usual clue: 10 is seconds, 13 is milliseconds, 16 is microseconds"]));
+                if (n >= 16777216 && n <= 4294967295)
+                    add("possible", "a 32 bit integer that could be a packed IPv4 address",
+                        ["dotted form: " + [(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255].join(".")]);
+                if (nw.length >= 17 && nw.length <= 19 && n > 0) {
+                    const disc = Number(BigInt(nw) >> 22n) + 1420070400000;
+                    if (plausible(disc)) add("possible", "a Discord style snowflake id", ["timestamp in the top 42 bits: " + utc(new Date(disc))]);
+                }
+                if (nw.length >= 13 && nw.length <= 19 && luhn(nw.replace("-", ""))) {
+                    const brand = (CARD_BRANDS.find(([re]) => re.test(nw)) || [null, "no brand matched the prefix"])[1];
+                    add("likely", "a payment card number, it passes the Luhn check", ["brand from the prefix: " + brand, "first six digits are the issuer identification number: " + nw.slice(0, 6), "treat this as sensitive data"]);
+                }
+            }
+            const isoM = t.match(/^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?)?$/);
+            if (isoM) {
+                const dt = new Date(t.replace(" ", "T"));
+                add("strong", "an ISO 8601 date" + (isoM[1] ? " and time" : ""),
+                    isNaN(dt.getTime()) ? ["the shape is right but the value does not parse"] :
+                    [utc(dt), localStr(dt), rel(dt.getTime()), "as a unix timestamp: " + Math.floor(dt.getTime() / 1000)]);
+            }
+
+            /* ---------- fixed format secrets and hashes ---------- */
+            HASH_FORMAT.forEach(([re, label]) => {
+                const m = t.match(re);
+                if (m) add("strong", label.replace("$1", m[1] || ""), ["recognised by its prefix, the value itself is not reversible"]);
+            });
+            SECRET_PREFIX.forEach(([re, label]) => {
+                if (re.test(t)) add("strong", label, ["recognised by its prefix", "if this is real, rotate it: it has now been pasted into a browser tab"]);
+            });
+            const sid = t.match(/^S-1-(\d+)((?:-\d+)+)$/);
+            if (sid) {
+                const parts = sid[2].slice(1).split("-");
+                const rid = parts[parts.length - 1];
+                const known = { 500: "built-in Administrator", 501: "built-in Guest", 502: "krbtgt", 512: "Domain Admins", 513: "Domain Users", 514: "Domain Guests", 515: "Domain Computers", 516: "Domain Controllers", 518: "Schema Admins", 519: "Enterprise Admins", 520: "Group Policy Creator Owners" };
+                const d = ["authority: " + sid[1] + (sid[1] === "5" ? ", NT Authority" : "")];
+                if (parts[0] === "21") d.push("S-1-5-21 means a domain or local machine SID, the last number is the RID");
+                if (known[rid]) d.push("RID " + rid + " is the well known " + known[rid]);
+                else if (+rid >= 1000) d.push("RID " + rid + " is a normal created account or group, they start at 1000");
+                add("strong", "a Windows security identifier, SID", d);
+            }
+            if (/^0x[0-9a-f]{40}$/i.test(t)) add("likely", "an Ethereum style address, 20 bytes of hex with a 0x prefix", ["mixed case would indicate an EIP-55 checksum"]);
+            if (/^(bc1|tb1)[0-9a-z]{25,87}$/.test(t)) add("likely", "a Bech32 Bitcoin address", ["prefix " + t.slice(0, 3) + " means " + (t.startsWith("bc1") ? "mainnet" : "testnet")]);
+            if (/^[13][1-9A-HJ-NP-Za-km-z]{25,34}$/.test(t)) add("possible", "a legacy Base58Check Bitcoin address", ["leading " + t[0] + " means " + (t[0] === "1" ? "pay to public key hash" : "pay to script hash")]);
+            if (ibanOk(t)) add("strong", "an IBAN, the mod 97 check digits are correct", ["country: " + t.slice(0, 2).toUpperCase(), "treat this as sensitive data"]);
+
+            /* ---------- bare hex ---------- */
+            if (/^[0-9a-f]+$/i.test(nw) && /[a-f]/i.test(nw) && nw.length % 2 === 0 && nw.length >= 8 && !uu && !macHex) {
+                const d = [nw.length + " hex characters, so " + nw.length / 2 + " bytes"];
+                if (HASH_LEN[nw.length]) {
+                    d.push("nothing in the value says which algorithm produced it, only the length narrows it down");
+                    if (nw.length === 32) d.push("if it came from a Windows credential dump it is far more likely NTLM than MD5");
+                    if (nw.length === 32) d.push("could also be a UUID with the dashes stripped");
+                    add("likely", HASH_LEN[nw.length], d);
+                } else add("possible", "a hex encoded value, " + nw.length / 2 + " bytes", d);
+            }
+            const fp = nw.match(/^([0-9a-f]{2}:){15,}[0-9a-f]{2}$/i);
+            if (fp) {
+                const n = nw.split(":").length;
+                add("strong", "a colon separated hex fingerprint, " + n + " bytes",
+                    [n === 20 ? "20 bytes is a SHA-1 certificate thumbprint" : n === 32 ? "32 bytes is a SHA-256 certificate fingerprint" : "unusual length for a fingerprint"]);
+            }
+
+            /* ---------- text shapes ---------- */
+            const js = jsonTry(t);
+            if (js !== null && /^[[{]/.test(t)) {
+                const d = [Array.isArray(js) ? "a JSON array of " + js.length + " items" : "a JSON object with " + Object.keys(js).length + " keys"];
+                if (!Array.isArray(js) && js) d.push("top level keys: " + Object.keys(js).slice(0, 12).join(", "));
+                add("strong", "valid JSON", d);
+            }
+            if (/^<\?xml|^<[a-z!]/i.test(t) && /<\/[a-z]+>|\/>/i.test(t))
+                add("likely", /<html|<!doctype html/i.test(t) ? "HTML" : "XML or another angle bracket markup", []);
+            if (/^[-a-z0-9_]+:\s/im.test(t) && /\n/.test(t) && !js) add("possible", "YAML or a key: value list", []);
+            if (/^\s*(select|insert|update|delete|drop|union|create)\b/i.test(t)) add("possible", "an SQL statement", []);
+            if (/^(\*|[0-9,\-*/]+)\s+(\*|[0-9,\-*/]+)\s+(\*|[0-9,\-*/]+)\s+(\*|[0-9,\-*/]+)\s+(\*|[0-9,\-*/]+)$/.test(t))
+                add("likely", "a cron expression, five fields: minute hour day month weekday", []);
+            if (/^v?\d+\.\d+\.\d+(-[0-9a-z.-]+)?(\+[0-9a-z.-]+)?$/i.test(t)) add("likely", "a semantic version string", []);
+            if (/^[.\-\s/]+$/.test(t) && /[.\-]/.test(t)) add("likely", "Morse code", ["use the Morse code operation in the decode direction"]);
+            if (/^[01\s]+$/.test(t) && nw.length >= 8 && nw.length % 8 === 0) add("likely", "binary digits, " + nw.length / 8 + " bytes worth", ["use Binary in the decode direction"]);
+            if (/%[0-9a-f]{2}/i.test(t)) add("likely", "URL percent encoded text", ["use URL in the decode direction"]);
+            if (/&(#x?[0-9a-f]+|amp|lt|gt|quot);/i.test(t)) add("likely", "text with HTML entities", ["use HTML entities in the decode direction"]);
+            if (/\\u[0-9a-f]{4}|\\x[0-9a-f]{2}/i.test(t)) add("likely", "text with backslash escapes", ["use Unicode escapes in the decode direction"]);
+            if (/^[0-9a-f]{8}\s{2}([0-9a-f]{2}\s)+\s*\|.*\|/im.test(t)) add("strong", "a hexdump, offset then bytes then an ASCII column", ["strip the offsets and the ASCII column before decoding the hex"]);
+            if (/^<~[!-u\s]*~>$/.test(t)) add("likely", "Ascii85 with the Adobe delimiters", ["use Ascii85 in the decode direction"]);
+
+            /* ---------- decode and look inside ---------- */
+            const inside = async (dec, how) => {
+                const d = ["decodes to " + dec.length + " bytes"];
+                const m = magicOf(dec);
+                if (m) d.push("and those bytes are: " + m);
+                const sc = printableScore(dec);
+                if (!m && sc > 0.9) {
+                    const txt = S(dec);
+                    const j = jsonTry(txt.trim());
+                    if (j) d.push("and the result is valid JSON");
+                    else d.push("and the result is readable text: " + txt.slice(0, 100).replace(/\s+/g, " "));
+                }
+                let utf16 = false;
+                if (dec.length > 3 && dec.length % 2 === 0) {
+                    let zeros = 0;
+                    for (let i = 1; i < Math.min(dec.length, 200); i += 2) if (dec[i] === 0) zeros++;
+                    if (zeros > Math.min(dec.length, 200) / 2 - 2) {
+                        utf16 = true;
+                        d.push("every second byte is zero, so the result is UTF-16LE text: " +
+                               S(dec.filter((x, i) => i % 2 === 0)).slice(0, 80) +
+                               " -- base64 of UTF-16LE is what PowerShell -EncodedCommand uses");
+                    }
+                }
+                if (m && /gzip|zlib/.test(m)) {
+                    try {
+                        const fmt = m.startsWith("gzip") ? "gzip" : "deflate";
+                        const st = new Blob([dec]).stream().pipeThrough(new DecompressionStream(fmt));
+                        const out = new Uint8Array(await new Response(st).arrayBuffer());
+                        const im = magicOf(out);
+                        d.push("decompresses to " + out.length + " bytes" + (im ? ", which are: " + im :
+                               printableScore(out) > 0.9 ? ": " + S(out).slice(0, 100).replace(/\s+/g, " ") : ""));
+                    } catch (e) { d.push("looks compressed but decompressing it failed: " + e.message); }
+                }
+                if (!m && !utf16 && sc <= 0.9) d.push("the result is not text, entropy " + shannon(dec).toFixed(2) + " bits per byte" +
+                    (shannon(dec) > 7.5 ? ", high enough to be compressed or encrypted" : ""));
+                add("likely", how, d);
+            };
+            /* If something already matched outright there is no point speculating
+               about what the same characters might decode to. */
+            if (a.deep && !hits.some(h => h.c === "strong") && !uu && !macHex && nw.length >= 8) {
+                if (isB64(nw, false) && nw.length % 4 === 0 && !/^[0-9a-f]+$/i.test(nw)) {
+                    try { await inside(b64dec(nw, "std"), "standard Base64 of something else"); } catch (e) {}
+                } else if (isB64(nw, true) && /[_-]/.test(nw)) {
+                    try { await inside(b64dec(nw, "url"), "URL safe Base64 of something else"); } catch (e) {}
+                }
+                if (/^[0-9a-f]+$/i.test(nw) && nw.length % 2 === 0 && nw.length >= 16) {
+                    try {
+                        const dec = fromHex(nw);
+                        if (magicOf(dec) || printableScore(dec) > 0.9) await inside(dec, "hex of something else");
+                    } catch (e) {}
+                }
+                if (/^[A-Z2-7]+=*$/.test(nw) && nw.length >= 16) {
+                    try {
+                        const dec = b32dec(nw, "std");
+                        if (magicOf(dec) || printableScore(dec) > 0.9) await inside(dec, "Base32 of something else");
+                    } catch (e) {}
+                }
+            }
+
+            /* ---------- fallback ---------- */
+            if (!hits.length) {
+                const sc = printableScore(b);
+                if (!b.length) add("strong", "nothing, the input is empty", []);
+                else if (sc > 0.95) add("possible", "plain text with no recognisable structure",
+                    ["word count: " + t.split(/\s+/).filter(x => x).length, "if you expected a format, check for stray whitespace or a truncated value"]);
+                else add("possible", "raw binary with no magic bytes this tool knows",
+                    ["first 16 bytes: " + toHex(b.subarray(0, 16)), "entropy " + shannon(b).toFixed(2) + " bits per byte"]);
+            }
+
+            /* ---------- render ---------- */
+            const order = { strong: 0, likely: 1, possible: 2 };
+            hits.sort((x, y) => order[x.c] - order[y.c]);
+            L.push("");
+            L.push("== looks like ==");
+            hits.forEach((h, i) => {
+                L.push("[" + h.c + "] " + h.what);
+                h.detail.forEach(x => L.push("         " + x));
+                if (i !== hits.length - 1) L.push("");
+            });
+            L.push("");
+            L.push("== note ==");
+            L.push("Everything above comes from shape, prefixes, magic bytes and check digits.");
+            L.push("Nothing was sent anywhere and nothing was looked up.");
+            return U(L.join("\n"));
         }
     }
 
